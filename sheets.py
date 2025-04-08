@@ -10,36 +10,33 @@ def connect_to_sheet():
     ]
 
     credentials = Credentials.from_service_account_file(
-        "ai-outreach-sheets-access-24fe56ec7689.json",  # <<< replace with your JSON key filename
+        "ai-outreach-sheets-access-24fe56ec7689.json",  # Make sure your filename matches
         scopes=scopes)
 
     client = gspread.authorize(credentials)
 
-    # Open the Google Sheet
+    # Open the correct Google Sheet by URL
     sheet = client.open_by_url(
-        "https://docs.google.com/spreadsheets/d/your-sheet-id-here"
-    )  # <<< replace with your sheet URL
+        "https://docs.google.com/spreadsheets/d/1WbdwNIdbvuCPG_Lh3-mtPCPO8ddLR5RIatcdeq29EPs/edit#gid=0"
+    )
 
-    # Choose the worksheet (tab)
     worksheet = sheet.sheet1
-
     return worksheet
 
 
+# Pull only qualified leads
 def get_qualified_leads():
     worksheet = connect_to_sheet()
-
-    # Get all the data
     all_rows = worksheet.get_all_records()
 
     qualified_leads = []
 
     for row in all_rows:
-        has_workspace = row.get('Has Google Workspace') == 'TRUE'
-        has_email = row.get('Found Email') == 'TRUE'
-        website = row.get('Website')
+        has_workspace = str(row.get('Google Workspace',
+                                    '')).strip().upper() == 'YES'
+        has_email = bool(row.get('Email', '').strip())
+        website = row.get('Website', '').strip()
 
-        # Only keep rows where both conditions are true
         if has_workspace and has_email and website:
             qualified_leads.append(website)
 
