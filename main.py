@@ -1,3 +1,4 @@
+
 from fastapi import FastAPI
 from pydantic import BaseModel
 import requests
@@ -18,20 +19,16 @@ app = FastAPI()
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 resend.api_key = os.getenv("RESEND_API_KEY")
 
-
 # ----- MODELS -----
 class ScrapeRequest(BaseModel):
     url: str
 
-
 class SummarizeRequest(BaseModel):
     text: str
-
 
 class GenerateEmailRequest(BaseModel):
     business_name: str
     summary: str
-
 
 # ----- HELPERS -----
 def save_generated_email(website, email_content, found_email=""):
@@ -50,10 +47,8 @@ def save_generated_email(website, email_content, found_email=""):
     if website in existing_websites:
         print(f"Website {website} already exists. Skipping save.")
         return
-    worksheet.append_row([website, email_content, found_email,
-                          ""])  # Website | Email | Email found | Status
+    worksheet.append_row([website, email_content, found_email, ""])  # Website | Email | Email found | Status
     print(f"Saved new website: {website}")
-
 
 def send_daily_report(count):
     try:
@@ -61,14 +56,12 @@ def send_daily_report(count):
             "from": "Good At Marketing <info@aiformreply.com>",
             "to": ["YOUR_PERSONAL_EMAIL@gmail.com"],
             "subject": "Daily AI Outreach Report",
-            "html":
-            f"<p>Today's AI Outreach Campaign completed successfully.<br><strong>New emails generated: {count}</strong></p>",
+            "html": f"<p>Today's AI Outreach Campaign completed successfully.<br><strong>New emails generated: {count}</strong></p>",
             "reply_to": "jenny@autoformchat.com"
         })
         print("✅ Daily report email sent.")
     except Exception as e:
         print(f"❌ Failed to send daily report email: {str(e)}")
-
 
 def find_internal_links(soup, base_url):
     links = []
@@ -78,7 +71,6 @@ def find_internal_links(soup, base_url):
             full_url = urljoin(base_url, href)
             links.append(full_url)
     return links
-
 
 def send_outreach_email(to_email, email_content):
     try:
@@ -92,7 +84,6 @@ def send_outreach_email(to_email, email_content):
         print(f"✅ Email sent to {to_email}")
     except Exception as e:
         print(f"❌ Failed to send email to {to_email}: {str(e)}")
-
 
 def mark_as_sent(website):
     try:
@@ -115,7 +106,6 @@ def mark_as_sent(website):
                 break
     except Exception as e:
         print(f"❌ Failed to mark {website} as sent: {str(e)}")
-
 
 def send_outreach_emails_daily():
     try:
@@ -151,18 +141,15 @@ def send_outreach_emails_daily():
     except Exception as e:
         print(f"❌ Failed to send outreach emails: {str(e)}")
 
-
 # ----- ROUTES -----
 @app.get("/")
 def home():
     return {"message": "AI Outreach System Online"}
 
-
 @app.get("/test_leads")
 def test_leads():
     qualified = get_qualified_leads()
     return {"qualified_leads": qualified}
-
 
 @app.post("/scrape")
 def scrape_website(request: ScrapeRequest):
@@ -173,8 +160,7 @@ def scrape_website(request: ScrapeRequest):
 
         response = requests.get(request.url, headers=headers, timeout=10)
         soup = BeautifulSoup(response.text, "html.parser")
-        collected_text += " ".join(
-            [tag.get_text() for tag in soup.find_all(["h1", "h2", "p"])])
+        collected_text += " ".join([tag.get_text() for tag in soup.find_all(["h1", "h2", "p"])])
 
         for a in soup.find_all('a', href=True):
             if "mailto:" in a['href']:
@@ -204,25 +190,25 @@ def scrape_website(request: ScrapeRequest):
     except Exception as e:
         return {"error": str(e)}
 
-
 @app.post("/summarize")
 def summarize(request: SummarizeRequest):
     try:
         response = client.chat.completions.create(
             model="gpt-4",
-            messages=[{
-                "role":
-                "system",
-                "content":
-                "Summarize the following website content in 3 sentences."
-            }, {
-                "role": "user",
-                "content": request.text
-            }])
+            messages=[
+                {
+                    "role": "system",
+                    "content": "Summarize the following website content in 3 sentences."
+                },
+                {
+                    "role": "user",
+                    "content": request.text
+                }
+            ]
+        )
         return {"summary": response.choices[0].message.content}
     except Exception as e:
         return {"error": str(e)}
-
 
 @app.post("/generate_email")
 def generate_email(request: GenerateEmailRequest):
@@ -234,19 +220,20 @@ Task: Write a short, friendly, and personalized cold email to {request.business_
 Based on this business summary: {request.summary}."""
         response = client.chat.completions.create(
             model="gpt-4",
-            messages=[{
-                "role":
-                "system",
-                "content":
-                "You are a friendly outreach email assistant helping a marketing agency offer AI solutions to businesses."
-            }, {
-                "role": "user",
-                "content": prompt
-            }])
+            messages=[
+                {
+                    "role": "system",
+                    "content": "You are a friendly outreach email assistant helping a marketing agency offer AI solutions to businesses."
+                },
+                {
+                    "role": "user",
+                    "content": prompt
+                }
+            ]
+        )
         return {"email": response.choices[0].message.content}
     except Exception as e:
         return {"error": str(e)}
-
 
 @app.get("/run_campaign")
 def run_campaign():
@@ -259,19 +246,20 @@ def run_campaign():
             if 'error' in scrape_resp or not scrape_resp.get('emails'):
                 continue
 
-            summarize_resp = summarize(
-                SummarizeRequest(text=scrape_resp['text']))
+            summarize_resp = summarize(SummarizeRequest(text=scrape_resp['text']))
             if 'error' in summarize_resp:
                 continue
 
             generate_resp = generate_email(
-                GenerateEmailRequest(business_name=website,
-                                     summary=summarize_resp['summary']))
+                GenerateEmailRequest(
+                    business_name=website,
+                    summary=summarize_resp['summary']
+                )
+            )
             if 'error' in generate_resp:
                 continue
 
-            first_email = scrape_resp['emails'][0] if scrape_resp[
-                'emails'] else ""
+            first_email = scrape_resp['emails'][0] if scrape_resp['emails'] else ""
             save_generated_email(website, generate_resp['email'], first_email)
             emails_generated += 1
 
@@ -282,15 +270,12 @@ def run_campaign():
     except Exception as e:
         return {"error": str(e)}
 
-
 # ----- SCHEDULER -----
 scheduler = BackgroundScheduler()
-
 
 def scheduled_campaign():
     print("Running scheduled campaign...")
     run_campaign()
-
 
 scheduler.add_job(scheduled_campaign, 'cron', hour=9, minute=0)
 scheduler.start()
