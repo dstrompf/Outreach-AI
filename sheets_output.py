@@ -119,4 +119,15 @@ def run_campaign():
             # 4. Save to Sheet
             save_generated_email(website, generate_resp['email'])
 
-        return {"status": "Campa
+        return {"status": "Campaign completed"}
+    except Exception as e:
+        return {"error": str(e)}
+
+
+def save_generated_email(website, email_content):
+    try:
+        worksheet = connect_to_sheet()
+        worksheet.append_row([website, email_content])
+        return {"status": "Campaign email saved to sheet"}
+    except Exception as e:
+        return {"error": str(e)}

@@ -134,8 +134,9 @@ def run_campaign():
 
             # 3. Generate Email
             generate_resp = generate_email(
-                GenerateEmailRequest(business_name=website,
-                                     summary=summarize_resp['summary']))
+                GenerateEmailRequest(
+                    business_name=website,
+                    summary=summarize_resp['summary']))
             if 'error' in generate_resp:
                 continue
 
