@@ -22,7 +22,6 @@ SUBJECT_LINES = [
 ]
 
 
-# Setup Google Sheets access
 def connect_to_sheet():
     scopes = [
         "https://www.googleapis.com/auth/spreadsheets",
@@ -44,7 +43,7 @@ def send_cold_email(to_email, subject, body_html):
             "to": [to_email],
             "subject": subject,
             "html": body_html,
-            "reply_to": "jenny@autoformchat.com"  # 👈 Important
+            "reply_to": "jenny@autoformchat.com"
         })
         print(f"✅ Email sent to {to_email}")
     except Exception as e:
@@ -55,10 +54,7 @@ def run_cold_email_campaign():
     worksheet = connect_to_sheet()
     data = worksheet.get_all_records()
 
-    # Find leads that haven't been sent yet
     unsent_leads = [row for row in data if not row.get('Sent?')]
-
-    # Limit to MAX_EMAILS_PER_DAY
     leads_to_send = unsent_leads[:MAX_EMAILS_PER_DAY]
     print(f"📬 Sending {len(leads_to_send)} cold emails today...")
 
@@ -69,26 +65,18 @@ def run_cold_email_campaign():
         if not website or not email_content:
             continue
 
-        # Construct a fake email address based on website (for now)
         to_email = f"info@{website.replace('https://', '').replace('www.', '').split('/')[0]}"
-
-        # Pick random subject
         subject = random.choice(SUBJECT_LINES)
 
-        # Send the email
         send_cold_email(to_email, subject, email_content)
 
-        # Mark as sent in Google Sheet
         try:
             cell = worksheet.find(website)
-            worksheet.update_cell(
-                cell.row, cell.col + 2,
-                "Yes")  # 'Sent?' column should be 2 columns after Website
+            worksheet.update_cell(cell.row, cell.col + 2, "Yes")
             print(f"✅ Marked {website} as sent.")
         except Exception as e:
             print(f"❌ Failed to mark {website} as sent: {str(e)}")
 
-        # Random delay between emails
         time.sleep(random.randint(30, 90))
 
 
