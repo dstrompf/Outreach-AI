@@ -8,3 +8,4 @@ pydantic
 google-auth
 gspread
 apscheduler
+resend
