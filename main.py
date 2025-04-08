@@ -17,19 +17,15 @@ openai.api_key = os.getenv("OPENAI_API_KEY")
 class ScrapeRequest(BaseModel):
     url: str
 
-
 class SummarizeRequest(BaseModel):
     text: str
-
 
 class FindEmailRequest(BaseModel):
     url: str
 
-
 class GenerateEmailRequest(BaseModel):
     business_name: str
     summary: str
-
 
 @app.get("/")
 def home():
@@ -91,9 +87,9 @@ def find_email(request: FindEmailRequest):
 @app.post("/generate_email")
 def generate_email(request: GenerateEmailRequest):
     try:
-        prompt = f"""Write a short, friendly outreach email to {request.business_name}. 
-        Mention their business based on this summary: {request.summary}. 
-        Offer a free consultation. End with a soft call to action."""
+        prompt = f"""Write a short, friendly outreach email to {request.business_name}. \
+Mention their business based on this summary: {request.summary}. \
+Offer a free consultation. End with a soft call to action."""
 
         response = openai.ChatCompletion.create(
             model="gpt-4",
