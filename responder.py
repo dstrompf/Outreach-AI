@@ -12,9 +12,12 @@ load_dotenv()
 IMAP_SERVER = 'imap.zoho.com'
 IMAP_PORT = 993
 EMAIL_ACCOUNT = 'jenny@autoformchat.com'
-EMAIL_PASSWORD = os.getenv(
-    "JENNY_EMAIL_PASSWORD")  # Store in .env for security
+EMAIL_PASSWORD = os.getenv("JENNY_PASSWORD")  # Using correct env var name
 AI_API_KEY = os.getenv("OPENAI_API_KEY")
+
+# Enable debug logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 client = OpenAI(api_key=AI_API_KEY)
 
