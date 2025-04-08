@@ -34,3 +34,7 @@ def home():
 @app.get("/health")
 def health():
     return {"status": "healthy", "responder_thread_alive": responder_thread.is_alive()}
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=3000)
