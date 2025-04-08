@@ -1,3 +1,4 @@
+# main.py (FINAL & UPDATED)
 
 from fastapi import FastAPI
 from pydantic import BaseModel
@@ -46,7 +47,10 @@ def save_generated_email(website, email_content):
     sheet = client.open_by_url(
         "https://docs.google.com/spreadsheets/d/1WbdwNIdbvuCPG_Lh3-mtPCPO8ddLR5RIatcdeq29EPs/edit"
     )
-    worksheet = sheet.sheet1
+
+    # 🛠️ IMPORTANT: Save to the "Generated Emails" tab, not the main one
+    worksheet = sheet.worksheet("Generated Emails")
+
     worksheet.append_row([website, email_content])
 
 # ----- ROUTES -----
@@ -149,6 +153,7 @@ def run_campaign():
     except Exception as e:
         return {"error": str(e)}
 
+# ----- MAIN -----
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=5000)
