@@ -1,5 +1,4 @@
-
-# main.py (FINAL & UPDATED)
+# main.py (Final Updated)
 
 from fastapi import FastAPI
 from pydantic import BaseModel
@@ -11,6 +10,7 @@ from dotenv import load_dotenv
 from sheets import get_qualified_leads
 import gspread
 from google.oauth2.service_account import Credentials
+from apscheduler.schedulers.background import BackgroundScheduler
 
 load_dotenv()
 
@@ -40,8 +40,7 @@ def save_generated_email(website, email_content):
     ]
 
     credentials = Credentials.from_service_account_file(
-        "ai-outreach-sheets-access-24fe56ec7689.json",
-        scopes=scopes
+        "ai-outreach-sheets-access-24fe56ec7689.json", scopes=scopes
     )
 
     client = gspread.authorize(credentials)
@@ -107,11 +106,34 @@ def find_email(request: FindEmailRequest):
 @app.post("/generate_email")
 def generate_email(request: GenerateEmailRequest):
     try:
-        prompt = f"""Write a short, friendly outreach email to {request.business_name}. Mention their business based on this summary: {request.summary}. Offer a free consultation. End with a soft call to action."""
+        prompt = f"""
+You are an AI outreach assistant for a marketing agency.
+
+Task: Write a short, friendly, and personalized cold email to {request.business_name}.
+
+Based on this business summary: {request.summary}.
+
+1. Start by finding common ground or complimenting something about their business (e.g., location, industry, services).
+2. Mention that you noticed they are using Google Workspace and have a contact form on their website.
+3. Introduce our application — "AI Form Reply" — in a natural way. Briefly explain:
+   - It connects directly with Google Workspace.
+   - It automatically responds to inbound form submissions.
+   - It answers common questions immediately and books qualified leads to appointments.
+   - It reduces manual email work and speeds up sales cycles.
+4. Highlight one key benefit: faster lead follow-up = more closed deals.
+5. Keep the tone helpful, genuine, and conversational (not robotic or overly salesy).
+6. End with a soft open-ended question like: 
+   "Would you be open to chatting about how we could help you respond faster and close more leads?"
+
+Rules:
+- Keep it under 150 words.
+- Sound like a real human: warm, helpful, confident.
+- No hard selling.
+"""
         response = client.chat.completions.create(
             model="gpt-4",
             messages=[
-                {"role": "system", "content": "You are a professional cold email writer."},
+                {"role": "system", "content": "You are a friendly outreach email assistant helping a marketing agency offer AI solutions to businesses."},
                 {"role": "user", "content": prompt}
             ]
         )
@@ -151,6 +173,22 @@ def run_campaign():
     except Exception as e:
         return {"error": str(e)}
 
+# ----- SCHEDULER -----
+# Initialize scheduler
+scheduler = BackgroundScheduler()
+
+# Define the scheduled job
+def scheduled_campaign():
+    print("Running scheduled campaign...")
+    run_campaign()
+
+# Add the job to the scheduler (runs daily at 9:00 AM server time)
+scheduler.add_job(scheduled_campaign, 'cron', hour=9, minute=0)
+
+# Start the scheduler
+scheduler.start()
+
+# ----- MAIN -----
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=5000)
