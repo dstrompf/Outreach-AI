@@ -15,6 +15,7 @@ run = ["python3", "main.py"]
 deploymentTarget = "cloudrun"
 
 [workflows]
+runButton = "AI Email System"
 
 [[workflows.workflow]]
 name = "Run server"
@@ -29,6 +30,19 @@ args = "uvicorn main:app --host 0.0.0.0 --port 5000"
 name = "AI Responder"
 author = 41158153
 mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python3 responder_server.py"
+
+[[workflows.workflow]]
+name = "AI Email System"
+author = 41158153
+mode = "parallel"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python3 main.py"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
