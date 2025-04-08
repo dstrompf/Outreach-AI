@@ -1,0 +1,80 @@
+Overview of the AI-Driven Email Responder App
+
+The AI-Driven Email Responder is an automated system designed to handle emails using OpenAI’s GPT-4 and send email replies through Zoho’s email system. It reads incoming emails, processes their content using an AI model, and generates an appropriate response based on a knowledge base. The system can also interact with users regarding lead generation, Google Workspace integrations, and booking meetings.
+
+The application consists of several components, and each file in the system serves a specific purpose:
+
+⸻
+
+1. Key Files in the App
+	1.	main.py
+	•	Purpose: This file handles the core functionality of the AI email responder service. It integrates with OpenAI’s API, handles the IMAP/SMTP interactions with Zoho (email service), and schedules tasks such as running the email responder periodically.
+	•	Key Functions:
+	•	fetch_unread_emails(): Connects to the Zoho IMAP server, fetches unread emails, and stores them.
+	•	generate_reply(): Uses OpenAI GPT-4 to generate personalized replies based on the incoming email’s content.
+	•	reply_to_email(): Sends the generated email response back to the sender via Zoho’s SMTP server.
+	•	process_emails(): Controls the flow of checking for unread emails, generating replies, and sending them. It runs in an infinite loop to check emails periodically.
+	2.	test_smtp.py
+	•	Purpose: This file is a test script to verify the SMTP functionality. It connects to Zoho’s SMTP server using application-specific credentials and sends a test email to a predefined recipient.
+	•	Key Functions:
+	•	send_test_email(): Sends a simple test email via Zoho’s SMTP server to ensure the email functionality is working.
+	3.	responder.py
+	•	Purpose: This is the core responder script that defines the interaction between the AI and the email system. It checks incoming emails, generates responses using OpenAI, and replies to the sender.
+	•	Key Functions:
+	•	Similar to main.py but more focused on email generation and replying.
+	•	Integrates the AI model to generate personalized responses using a knowledge base.
+	4.	.env
+	•	Purpose: This file stores environment variables such as API keys and email credentials. It is used to securely manage sensitive information like passwords and keys.
+	•	Key Variables:
+	•	OPENAI_API_KEY: API key for accessing OpenAI services.
+	•	RESEND_API_KEY: API key for sending emails via Resend.
+	•	JENNY_EMAIL: The email address of Jenny (used for logging into Zoho).
+	•	JENNY_PASSWORD: The password for Jenny’s Zoho account (preferably an application-specific password).
+	5.	knowledge_base.txt
+	•	Purpose: Contains the knowledge base for the AI to refer to when responding to emails. This text file stores predefined answers to common questions or key topics related to the service.
+	•	Key Topics:
+	•	AI Automation: Explains the AI Form Reply system and its automation capabilities.
+	•	Pricing: Describes the pricing structure of the service.
+	•	Google Workspace Integration: Explains how the service integrates with Google Workspace.
+	•	Default Response: A fallback response when the AI cannot find a relevant answer in the knowledge base.
+	6.	sheets.py
+	•	Purpose: Manages interaction with Google Sheets to store data such as email responses, websites, and status updates.
+	•	Key Functions:
+	•	get_qualified_leads(): Retrieves a list of qualified leads from the Google Sheet, typically containing websites that need to be contacted.
+	7.	requirements.txt
+	•	Purpose: Lists all the Python dependencies required to run the application. These dependencies will be installed when setting up the app’s environment.
+	•	Common Dependencies:
+	•	openai: To interact with OpenAI’s GPT-4 model.
+	•	requests: To send HTTP requests (for example, fetching websites).
+	•	beautifulsoup4: To scrape and parse HTML content.
+	•	gspread: To interact with Google Sheets.
+	•	dotenv: To load environment variables from the .env file.
+	•	smtplib: To send emails using the Zoho SMTP server.
+
+⸻
+
+How the App Works
+	1.	Email Check:
+The system connects to Zoho’s IMAP server and checks for unread emails. When an unread email is found, it fetches the email content, extracts key information (like the subject and body), and prepares to generate a response.
+	2.	Email Response Generation:
+The app uses OpenAI’s GPT-4 model to generate a response to the incoming email. The model uses a predefined knowledge base (stored in knowledge_base.txt) to craft an appropriate response. The AI model also considers the website’s information when available, to make the response feel more personalized.
+	3.	Sending the Reply:
+The generated reply is then sent back to the original sender using Zoho’s SMTP server. The system logs into the email account (using credentials stored in the .env file), sends the email, and marks the email as “replied.”
+	4.	Automated Outreach:
+The application also manages outreach campaigns, where it scrapes websites for email addresses, generates personalized outreach emails using GPT-4, and sends them through the email service. This process is scheduled to run periodically (e.g., daily).
+
+⸻
+
+Next Steps to Test
+	1.	Run the SMTP Test:
+Test whether your email sending functionality is working by running test_smtp.py. If it works, it confirms that the Zoho SMTP configuration is correct.
+	2.	Verify Knowledge Base:
+Make sure that the knowledge_base.txt file contains relevant and accurate answers for the AI to reference when replying to incoming emails.
+	3.	Check Email Responses:
+Ensure that the AI-generated responses are accurate and in line with the business goals (lead generation, booking meetings, etc.).
+	4.	Deploy and Test Campaigns:
+Test the outreach campaign by running the system on websites from the Google Sheet. This will help confirm that the system can scrape websites, generate emails, and send them automatically.
+
+⸻
+
+If you’re ready to move forward with the tests or have any more questions about the components, let me know!

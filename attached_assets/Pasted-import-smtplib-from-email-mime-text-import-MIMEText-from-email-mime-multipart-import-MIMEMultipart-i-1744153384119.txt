@@ -1,0 +1,57 @@
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
+import os
+from dotenv import load_dotenv
+
+# Load environment variables
+load_dotenv()
+
+# Fetch email credentials and recipient from environment variables
+EMAIL_ACCOUNT = os.getenv("JENNY_EMAIL")  # Your Zoho email (e.g., jenny@autoformchat.com)
+EMAIL_PASSWORD = os.getenv("JENNY_PASSWORD")  # Application-specific password for Zoho
+TO_EMAIL = 'test@example.com'  # The recipient email address where the test email should be sent
+
+# SMTP server settings for Zoho
+SMTP_SERVER = 'smtp.zoho.com'
+SMTP_PORT = 587
+
+# Debugging: print credentials to check if they are loaded correctly
+print(f"Using email: {EMAIL_ACCOUNT}")
+print(f"Connecting to SMTP server: {SMTP_SERVER} on port {SMTP_PORT}")
+
+def send_test_email():
+    msg = MIMEMultipart()
+    msg['From'] = EMAIL_ACCOUNT
+    msg['To'] = TO_EMAIL
+    msg['Subject'] = 'SMTP Test Email from Replit'
+
+    body = MIMEText('This is a test email to verify SMTP functionality.',
+                    'plain')
+    msg.attach(body)
+
+    try:
+        # Debugging: print to show that we're starting the email sending process
+        print("Trying to connect to SMTP server...")
+        
+        # Connect to the SMTP server
+        server = smtplib.SMTP(SMTP_SERVER, SMTP_PORT)
+        server.starttls()  # Secure the connection
+        print("Secured connection with the SMTP server.")
+        
+        server.login(EMAIL_ACCOUNT, EMAIL_PASSWORD)  # Log in to the SMTP server
+        print("Logged in successfully to the SMTP server.")
+        
+        server.sendmail(EMAIL_ACCOUNT, TO_EMAIL, msg.as_string())  # Send email
+        server.quit()  # Close the connection
+
+        # Debugging: print success message
+        print(f"✅ Test email sent successfully to {TO_EMAIL}")
+    except Exception as e:
+        # Print the error message if something goes wrong
+        print(f"❌ Error sending test email: {str(e)}")
+
+
+# Run the test
+if __name__ == "__main__":
+    send_test_email()
