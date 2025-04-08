@@ -12,7 +12,7 @@ EMAIL_ACCOUNT = os.getenv(
     "JENNY_EMAIL")  # Your Zoho email (e.g., jenny@autoformchat.com)
 EMAIL_PASSWORD = os.getenv(
     "JENNY_PASSWORD")  # Application-specific password for Zoho
-TO_EMAIL = 'test@example.com'  # The recipient email address where the test email should be sent
+TO_EMAIL = 'ds@gam0.com'  # The recipient email address where the test email should be sent
 
 # SMTP server settings for Zoho
 SMTP_SERVER = 'smtp.zoho.com'
