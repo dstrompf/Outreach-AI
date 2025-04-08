@@ -1,4 +1,3 @@
-# main.py (Final Updated)
 
 from fastapi import FastAPI
 from pydantic import BaseModel
@@ -13,9 +12,7 @@ from google.oauth2.service_account import Credentials
 from apscheduler.schedulers.background import BackgroundScheduler
 
 load_dotenv()
-
 app = FastAPI()
-
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 # ----- MODELS -----
@@ -174,18 +171,13 @@ def run_campaign():
         return {"error": str(e)}
 
 # ----- SCHEDULER -----
-# Initialize scheduler
 scheduler = BackgroundScheduler()
 
-# Define the scheduled job
 def scheduled_campaign():
     print("Running scheduled campaign...")
     run_campaign()
 
-# Add the job to the scheduler (runs daily at 9:00 AM server time)
 scheduler.add_job(scheduled_campaign, 'cron', hour=9, minute=0)
-
-# Start the scheduler
 scheduler.start()
 
 # ----- MAIN -----
