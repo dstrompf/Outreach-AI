@@ -15,7 +15,14 @@ EMAIL_ACCOUNT = 'jenny@autoformchat.com'
 EMAIL_PASSWORD = os.getenv("JENNY_PASSWORD")  # Using correct env var name
 AI_API_KEY = os.getenv("OPENAI_API_KEY")
 
+# Check required environment variables
+if not EMAIL_PASSWORD:
+    raise ValueError("JENNY_PASSWORD environment variable is not set")
+if not AI_API_KEY:
+    raise ValueError("OPENAI_API_KEY environment variable is not set")
+
 # Enable debug logging
+import logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
