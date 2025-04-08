@@ -15,6 +15,7 @@ run = ["python3", "main.py"]
 deploymentTarget = "cloudrun"
 
 [workflows]
+runButton = "AI Responder"
 
 [[workflows.workflow]]
 name = "Run server"
@@ -24,6 +25,15 @@ mode = "sequential"
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "uvicorn main:app --host 0.0.0.0 --port 5000"
+
+[[workflows.workflow]]
+name = "AI Responder"
+author = 41158153
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python3 responder_server.py"
 
 [[ports]]
 localPort = 3000
