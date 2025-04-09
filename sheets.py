@@ -28,8 +28,7 @@ def connect_to_sheet():
     sheet = client.open_by_url(
         "https://docs.google.com/spreadsheets/d/1WbdwNIdbvuCPG_Lh3-mtPCPO8ddLR5RIatcdeq29EPs/edit#gid=0"
     )
-    worksheet = sheet.sheet1
-    return worksheet
+    return sheet
 
 def get_qualified_leads():
     sheet = connect_to_sheet()
