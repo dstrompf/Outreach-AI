@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import logging
+import time # Added import for time module
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -91,9 +92,10 @@ def find_internal_links(soup, base_url):
     for a_tag in soup.find_all('a', href=True):
         href = a_tag['href']
         if href.startswith('/') or base_url in href:
-            full_url = urljoin(base_url, href)
-            links.append(full_url)
-    return links
+            if any(x in href.lower() for x in ['contact', 'about', 'team']):
+                full_url = urljoin(base_url, href)
+                links.append(full_url)
+    return links[:3]  # Limit to 3 most relevant pages
 
 
 def send_outreach_email(to_email, email_content):
@@ -217,11 +219,22 @@ def scrape_website(request: ScrapeRequest):
         collected_text += " ".join(
             [tag.get_text() for tag in soup.find_all(["h1", "h2", "p"])])
 
+        # Check mailto links
         for a in soup.find_all('a', href=True):
             if "mailto:" in a['href']:
                 email = a['href'].replace('mailto:', '').strip()
-                if '@' in email and '.' in email and ' ' not in email:
+                if '@' in email and '.' in email:
                     collected_emails.add(email)
+
+        # Check text content for email patterns
+        text = soup.get_text()
+        words = text.split()
+        for word in words:
+            if '@' in word and '.' in word and ' ' not in word:
+                email = word.strip('.,()[]{}')
+                if email.count('@') == 1:
+                    collected_emails.add(email)
+
 
         links = find_internal_links(soup, request.url)
         important_links = [
@@ -243,7 +256,7 @@ def scrape_website(request: ScrapeRequest):
             except:
                 continue
 
-        return {"text": collected_text, "emails": list(collected_emails)}
+        return {"text": collected_text, "emails": list(collected_emails)} if collected_emails else {"error": "No emails found"}
     except Exception as e:
         return {"error": str(e)}
 
@@ -343,7 +356,7 @@ def run_campaign():
                     time.sleep(1)  # Add delay before API call
                     generated_email = generate_resp['email']
                     first_email = scrape_resp['emails'][0]
-                    
+
                     logger.info(f"Writing to sheet - Website: {website}, Email: {first_email}")
                     scopes = [
                         "https://www.googleapis.com/auth/spreadsheets",
