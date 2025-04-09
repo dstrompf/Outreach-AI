@@ -1,6 +1,11 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
+import logging
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 import requests
 from bs4 import BeautifulSoup
 from urllib.parse import urljoin
@@ -289,36 +294,54 @@ Based on this business summary: {request.summary}"""
 @app.get("/run_campaign")
 def run_campaign():
     try:
-        print("Starting campaign...")
+        logger.info("Starting campaign...")
         qualified_leads = get_qualified_leads()
-        print(f"Found {len(qualified_leads)} qualified leads")
+        logger.info(f"Found {len(qualified_leads)} qualified leads")
         emails_generated = 0
 
-        for website in qualified_leads:
-            scrape_resp = scrape_website(ScrapeRequest(url=website))
-            if 'error' in scrape_resp or not scrape_resp.get('emails'):
+        for lead in qualified_leads:
+            try:
+                website = lead['website']
+                logger.info(f"Processing website: {website}")
+                
+                scrape_resp = scrape_website(ScrapeRequest(url=website))
+                if 'error' in scrape_resp:
+                    logger.error(f"Scraping failed for {website}: {scrape_resp['error']}")
+                    continue
+                
+                if not scrape_resp.get('emails'):
+                    logger.info(f"No emails found for {website}")
+                    continue
+
+                summarize_resp = summarize(ScrapeRequest(text=scrape_resp['text']))
+                if 'error' in summarize_resp:
+                    logger.error(f"Summarization failed for {website}")
+                    continue
+
+                generate_resp = generate_email(
+                    GenerateEmailRequest(
+                        business_name=lead.get('business_name', website),
+                        summary=summarize_resp['summary']
+                    )
+                )
+                
+                if 'error' in generate_resp:
+                    logger.error(f"Email generation failed for {website}")
+                    continue
+
+                first_email = scrape_resp['emails'][0]
+                save_generated_email(website, generate_resp['email'], first_email)
+                emails_generated += 1
+                logger.info(f"Successfully processed {website}")
+
+            except Exception as e:
+                logger.error(f"Error processing {website}: {str(e)}")
                 continue
 
-            summarize_resp = summarize(
-                SummarizeRequest(text=scrape_resp['text']))
-            if 'error' in summarize_resp:
-                continue
-
-            generate_resp = generate_email(
-                GenerateEmailRequest(business_name=website,
-                                     summary=summarize_resp['summary']))
-            if 'error' in generate_resp:
-                continue
-
-            first_email = scrape_resp['emails'][0] if scrape_resp[
-                'emails'] else ""
-            save_generated_email(website, generate_resp['email'], first_email)
-            emails_generated += 1
-
+        logger.info(f"Campaign complete. Generated {emails_generated} emails.")
         send_daily_report(emails_generated)
         send_outreach_emails_daily()
-
-        return {"status": "Campaign complete."}
+        return {"status": "Campaign complete.", "emails_generated": emails_generated}
     except Exception as e:
         return {"error": str(e)}
 
