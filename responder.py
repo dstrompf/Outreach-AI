@@ -6,6 +6,15 @@ import random
 import traceback
 from dotenv import load_dotenv
 from openai import OpenAI
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
+import gspread
+from google.oauth2.service_account import Credentials
+from urllib.parse import urljoin
+import requests
+from bs4 import BeautifulSoup
+import logging
 
 # Load environment variables
 load_dotenv()
@@ -13,9 +22,15 @@ load_dotenv()
 # Jenny's Zoho Email Credentials
 IMAP_SERVER = 'imap.zoho.com'
 IMAP_PORT = 993
+SMTP_SERVER = 'smtp.zoho.com'
+SMTP_PORT = 587
 EMAIL_ACCOUNT = 'jenny@autoformchat.com'
-EMAIL_PASSWORD = os.getenv("JENNY_PASSWORD")  # Using correct env var name
+EMAIL_PASSWORD = os.getenv("JENNY_PASSWORD")
 AI_API_KEY = os.getenv("OPENAI_API_KEY")
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 # Check required environment variables
 if not EMAIL_PASSWORD:
@@ -23,284 +38,135 @@ if not EMAIL_PASSWORD:
 if not AI_API_KEY:
     raise ValueError("OPENAI_API_KEY environment variable is not set")
 
-# Enable debug logging
-import logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
-
-def log_email_check():
-    logger.info(f"Checking emails using account: {EMAIL_ACCOUNT}")
-    logger.info(f"IMAP Server: {IMAP_SERVER}:{IMAP_PORT}")
-
 client = OpenAI(api_key=AI_API_KEY)
 
-# Knowledge Base - You can update this knowledge based on customer needs or frequently asked questions
+# Knowledge Base
 knowledge_base = {
-    "ai_automation":
-    "AI Form Reply automates the process from website form submissions to scheduling meetings. It directly integrates with Google Workspace, answers common questions, qualifies leads, and books them into your calendar. This all happens automatically, saving you time and increasing sales!",
-    "pricing":
-    "Our solution is cost-effective for small businesses, with plans starting at $X per month. Please contact us for a custom quote depending on your needs.",
-    "google_workspace":
-    "AI Form Reply integrates seamlessly with Google Workspace. It uses Google Calendar for scheduling and Google Meet for virtual meetings.",
-    "booking":
-    "If you're ready to schedule a call, feel free to book a time that works best for you using this link: https://calendar.google.com/calendar/u/0/appointments/schedules/AcZssZ36P0ABwQ5qKYkBrQ302KCunFUEoe23GadJe8JFnQnApuoDbID8QD26WJio1oDY5TqrEV2QfIQq",
-    "default":
-    "I'm happy to help with any other questions! Feel free to ask about how AI Form Reply can help automate your lead management and scheduling process.",
+    "ai_automation": "AI Form Reply automates the process from website form submissions to scheduling meetings. It directly integrates with Google Workspace, answers common questions, qualifies leads, and books them into your calendar.",
+    "pricing": "Our solution is cost-effective for small businesses. Please schedule a call to discuss pricing for your specific needs.",
+    "google_workspace": "AI Form Reply integrates seamlessly with Google Workspace. It uses Google Calendar for scheduling and Google Meet for virtual meetings.",
+    "booking": "If you're ready to schedule a call, feel free to book a time that works best for you using this link: https://calendar.google.com/calendar/u/0/appointments/schedules/AcZssZ36P0ABwQ5qKYkBrQ302KCunFUEoe23GadJe8JFnQnApuoDbID8QD26WJio1oDY5TqrEV2QfIQq",
+    "default": "I'm happy to help with any other questions about how AI Form Reply can help automate your lead management."
 }
 
+def connect_to_sheet():
+    scopes = [
+        "https://www.googleapis.com/auth/spreadsheets",
+        "https://www.googleapis.com/auth/drive"
+    ]
+    credentials = Credentials.from_service_account_file(
+        "ai-outreach-sheets-access-24fe56ec7689.json", scopes=scopes)
+    client = gspread.authorize(credentials)
+    sheet = client.open_by_url(
+        "https://docs.google.com/spreadsheets/d/1WbdwNIdbvuCPG_Lh3-mtPCPO8ddLR5RIatcdeq29EPs/edit"
+    )
+    return sheet
 
-def fetch_unread_emails():
-    log_email_check()
+def find_emails_on_page(url):
     try:
-        # Connect to Zoho IMAP server with longer timeout
-        mail = imaplib.IMAP4_SSL(IMAP_SERVER, IMAP_PORT, timeout=30)
-        logger.info("Connected to IMAP server")
-        mail.login(EMAIL_ACCOUNT, EMAIL_PASSWORD)
-        logger.info("✅ Connected to Jenny's inbox!")
-        
-        # Set longer socket timeout after connection
-        mail.socket().settimeout(60)
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
+        }
+        response = requests.get(url, headers=headers, timeout=10)
+        soup = BeautifulSoup(response.text, 'html.parser')
+        emails = set()
 
-        # Select inbox and get unread emails
-        mail.select('inbox')
-        status, response = mail.search(None, '(UNSEEN)')
-        unread_msg_nums = response[0].split()
-        
-        logger.info(f"Found {len(unread_msg_nums)} unread messages")
-        
-        emails = []
-        for num in unread_msg_nums:
-            try:
-                status, data = mail.fetch(num, '(RFC822)')
-                raw_email = data[0][1]
-                msg = email.message_from_bytes(raw_email)
+        # Find mailto links
+        for link in soup.find_all('a', href=True):
+            href = link['href']
+            if href.startswith('mailto:'):
+                email = href.replace('mailto:', '').split('?')[0].strip()
+                if '@' in email and '.' in email:
+                    emails.add(email)
 
-                subject = msg['subject']
-                from_email = msg['from']
-                
-                # Handle multipart messages
-                if msg.is_multipart():
-                    for part in msg.walk():
-                        if part.get_content_type() == "text/plain":
-                            body = part.get_payload(decode=True).decode()
-                            break
-                else:
-                    body = msg.get_payload(decode=True).decode()
-
-                message_id = msg.get('Message-ID', '')
-                references = msg.get('References', '')
-                
-                emails.append({
-                    "subject": subject,
-                    "from_email": from_email,
-                    "body": body,
-                    "num": num,
-                    "message_id": message_id,
-                    "references": references
-                })
-                logger.info(f"Processed email from: {from_email}")
-            except Exception as e:
-                logger.error(f"Error processing individual email: {e}")
-                continue
-                
-        mail.logout()
-        return emails
+        return list(emails)
     except Exception as e:
-        logger.error(f"Error in fetch_unread_emails: {e}")
+        logger.error(f"Error finding emails on {url}: {str(e)}")
         return []
 
-
-def get_initial_correspondence(from_email):
+def save_found_email(website, email):
     try:
-        scopes = ["https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive"]
-        credentials = Credentials.from_service_account_file("ai-outreach-sheets-access-24fe56ec7689.json", scopes=scopes)
-        client = gspread.authorize(credentials)
-        sheet = client.open_by_url("https://docs.google.com/spreadsheets/d/1WbdwNIdbvuCPG_Lh3-mtPCPO8ddLR5RIatcdeq29EPs/edit")
+        sheet = connect_to_sheet()
         worksheet = sheet.worksheet("Generated Emails")
-        
-        # Find the row with matching email
-        cell = worksheet.find(from_email)
+
+        # Find row with website
+        cell = worksheet.find(website)
         if cell:
-            row = worksheet.row_values(cell.row)
-            return {
-                'website': row[0],
-                'initial_email': row[1],
-                'business_summary': row[2] if len(row) > 2 else ''
-            }
+            worksheet.update_cell(cell.row, 3, email)  # Update email column
+            logger.info(f"Updated email for {website}: {email}")
     except Exception as e:
-        logger.error(f"Error getting initial correspondence: {e}")
-    return None
+        logger.error(f"Error saving email for {website}: {str(e)}")
 
-def generate_reply(email_body, from_email):
+def send_email(to_email, subject, content):
     try:
-        # Extract first name from email if possible
-        recipient_name = from_email.split('@')[0].split('.')[0].title() if '@' in from_email else ''
-        
-        # Get context from initial correspondence
-        context = get_initial_correspondence(from_email)
-        system_prompt = f"""You are Jenny, a helpful AI assistant for AI Form Reply.
-        The recipient's name is '{recipient_name}' - use it naturally in the response if available.
-        Never use 'Dear Customer' or similar generic greetings.
-        Analyze the incoming email and provide a personalized, friendly response.
-        Address their specific questions or concerns.
-        Highlight relevant features based on their interests.
-        If appropriate, guide them towards booking a meeting, but do so naturally.
-        Keep responses professional yet conversational."""
-        
-        if context:
-            system_prompt += f"\n\nContext about this business:\nWebsite: {context['website']}\nBusiness Summary: {context['business_summary']}\nInitial Outreach: {context['initial_email']}"
-        
-        response = client.chat.completions.create(
-            model="gpt-4",
-            messages=[
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": f"Generate a friendly reply to this email that addresses their questions, references their business context when relevant, and encourages booking a meeting when appropriate: {email_body}"}
-            ]
-        )
-        return response.choices[0].message.content
-    except Exception as e:
-        logger.error(f"Error generating reply: {e}")
-        return "Thank you for your interest. I'd be happy to schedule a call to discuss how we can help automate your lead responses."
+        msg = MIMEMultipart()
+        msg['From'] = "Jenny from AI Form Reply <info@aiformreply.com>"
+        msg['To'] = to_email
+        msg['Subject'] = subject
+        msg['Reply-To'] = "jenny@autoformchat.com"
 
+        body = MIMEText(content, 'plain')
+        msg.attach(body)
 
-def reply_to_email(to_email, original_subject, reply_content, message_id=None, references=None):
-    import smtplib
-    from email.mime.text import MIMEText
-    from email.mime.multipart import MIMEMultipart
-    from email.utils import make_msgid
-
-    msg = MIMEMultipart()
-    msg['From'] = EMAIL_ACCOUNT
-    msg['To'] = to_email
-    msg['Subject'] = f"Re: {original_subject.replace('Re: ', '')}" if original_subject else "Re: Your inquiry"
-    
-    # Set proper threading headers
-    if message_id:
-        msg['In-Reply-To'] = message_id
-        msg['References'] = message_id if not references else f"{references} {message_id}"
-    
-    # Only append booking link if not already present in the content
-    if "calendar.google.com" not in reply_content:
-        booking_link = knowledge_base.get("booking", "")
-        booking_url = booking_link.split(":", 1)[1].strip() if ":" in booking_link else booking_link.strip()
-        full_response = f"{reply_content}\n\nWould you like to discuss this further? You can book a time that works best for you here: https{booking_url}"
-    else:
-        full_response = reply_content
-    
-    body = MIMEText(full_response, 'plain')
-    msg.attach(body)
-
-    try:
-        server = smtplib.SMTP('smtp.zoho.com', 587)
+        server = smtplib.SMTP(SMTP_SERVER, SMTP_PORT)
         server.starttls()
         server.login(EMAIL_ACCOUNT, EMAIL_PASSWORD)
-        server.sendmail(EMAIL_ACCOUNT, to_email, msg.as_string())
+        server.send_message(msg)
         server.quit()
 
-        print(f"✅ Replied to {to_email}")
-    except Exception as e:
-        print(f"❌ Failed to reply to {to_email}: {str(e)}")
-
-
-def is_system_email(subject, from_email, body):
-    system_indicators = [
-        "mailer-daemon",
-        "postmaster",
-        "no-reply",
-        "noreply",
-        "do-not-reply",
-        "automated-message",
-        "invoice",
-        "confirmation",
-        "subscription",
-        "payment",
-        "order"
-    ]
-    
-    from_lower = from_email.lower() if from_email else ""
-    subject_lower = subject.lower() if subject else ""
-    
-    # Block emails from aiformreply.com domain
-    if "@aiformreply.com" in from_lower:
+        logger.info(f"✅ Email sent to {to_email}")
         return True
-    
-    # Check both subject and sender for system indicators
-    return any(indicator in from_lower or indicator in subject_lower for indicator in system_indicators)
+    except Exception as e:
+        logger.error(f"❌ Failed to send email to {to_email}: {str(e)}")
+        return False
 
-# Track processed message IDs to prevent duplicates
-PROCESSED_IDS_FILE = "processed_messages.txt"
+def process_website(website_url, business_name=""):
+    emails = find_emails_on_page(website_url)
 
-def load_processed_messages():
-    try:
-        with open(PROCESSED_IDS_FILE, 'r') as f:
-            return set(line.strip() for line in f)
-    except FileNotFoundError:
-        return set()
+    if not emails:
+        logger.info(f"No valid emails found for {website_url}")
+        return None
 
-def save_processed_message(message_id):
-    with open(PROCESSED_IDS_FILE, 'a') as f:
-        f.write(f"{message_id}\n")
-
-processed_messages = load_processed_messages()
+    # Use the first found email
+    email = emails[0]
+    save_found_email(website_url, email)
+    return email
 
 def process_emails():
+    logger.info("Starting email processing cycle")
     try:
-        logger.info("Starting email processing cycle")
-        logger.info(f"Using email account: {EMAIL_ACCOUNT}")
-        
-        # Verify IMAP connection
-        try:
-            mail = imaplib.IMAP4_SSL(IMAP_SERVER, IMAP_PORT)
-            mail.login(EMAIL_ACCOUNT, EMAIL_PASSWORD)
-            logger.info("✅ IMAP connection successful")
-            mail.logout()
-        except Exception as e:
-            logger.error(f"❌ IMAP connection failed: {str(e)}")
-            return
+        sheet = connect_to_sheet()
+        worksheet = sheet.worksheet("Generated Emails")
+        rows = worksheet.get_all_records()
 
-        emails = fetch_unread_emails()
-        logger.info(f"Found {len(emails)} unread emails")
-        
-        for email in emails:
-            try:
-                logger.info(f"📥 Processing email from {email['from_email']} with subject {email['subject']}")
-                
-                # Skip system emails and already processed messages
-                message_id = email.get('message_id', '')
-                if is_system_email(email['subject'], email['from_email'], email['body']) or message_id in processed_messages:
-                    logger.info("Skipping system/duplicate email")
-                    continue
-                save_processed_message(message_id)
-                processed_messages.add(message_id)
-                
-                # Generate a reply based on the email content
-                reply_content = generate_reply(email['body'], email['from_email'])
-                if reply_content:
-                    reply_to_email(
-                        email['from_email'], 
-                        email['subject'], 
-                        reply_content,
-                        email['message_id'],
-                        email['references']
-                    )
-                    logger.info(f"✅ Reply sent to {email['from_email']}")
-                    
-                    # Wait for 3-5 minutes before processing next email
-                    wait_time = random.randint(180, 300)
-                    logger.info(f"⏳ Waiting {wait_time} seconds before next email...")
-                    time.sleep(wait_time)
-            except Exception as e:
-                logger.error(f"Error processing individual email: {e}")
+        for row in rows:
+            website = row.get('Website', '')
+            email_content = row.get('Email Content', '')
+            status = row.get('Status', '')
+
+            if not website or not email_content or status == 'Sent':
                 continue
-                
-        logger.info("Completed email processing cycle")
-    except Exception as e:
-        logger.error(f"Error in process_emails: {e}")
 
+            # Find or validate email
+            email = process_website(website)
+            if not email:
+                logger.info(f"Skipping {website} - no valid email found")
+                continue
+
+            # Send email
+            if send_email(email, "Quick question about your Google Workspace setup", email_content):
+                try:
+                    cell = worksheet.find(website)
+                    worksheet.update_cell(cell.row, 4, "Sent")
+                    time.sleep(random.randint(30, 60))
+                except Exception as e:
+                    logger.error(f"Error updating status for {website}: {str(e)}")
+
+    except Exception as e:
+        logger.error(f"Error in process_emails: {str(e)}")
 
 if __name__ == "__main__":
-    print("✨ Email responder system starting up...")
+    logger.info("✨ Email responder system starting up...")
     while True:
         process_emails()
-        time.sleep(30)  # Check every 30 seconds
+        time.sleep(300)  # Wait 5 minutes between cycles
