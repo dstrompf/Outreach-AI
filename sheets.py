@@ -4,14 +4,13 @@ import time
 import logging
 from google.oauth2.service_account import Credentials
 
-# Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 def test_sheets_connection():
     try:
-        worksheet = connect_to_sheet()
-        if worksheet:
+        sheet = connect_to_sheet()
+        if sheet:
             logger.info("✅ Successfully connected to Google Sheets")
             return True
         return False
@@ -43,45 +42,39 @@ def get_qualified_leads():
             logger.error("Failed to connect to sheet")
             return []
             
+        # Get main worksheet and sent worksheet
         worksheet = sheet.worksheet("Sheet1")
         sent_worksheet = sheet.worksheet("Generated Emails")
 
-        # Get processed websites efficiently
+        # Get already processed websites
+        processed_websites = set()
         try:
-            processed_websites = set(sent_worksheet.col_values(1)[1:])
+            processed_websites = set(sent_worksheet.col_values(1)[1:])  # Skip header
         except Exception as e:
             logger.error(f"Error getting processed websites: {e}")
-            processed_websites = set()
 
-        # Get only needed columns
-        try:
-            websites = worksheet.col_values(1)[1:]  # Assuming Website is first column
-            business_names = worksheet.col_values(2)[1:]  # Assuming Business Name is second column
-            workspace_status = worksheet.col_values(3)[1:]  # Assuming Google Workspace is third column
-            
-            qualified_leads = []
-            for website, business_name, workspace in zip(websites, business_names, workspace_status):
-                website = website.strip()
-                if website and website not in processed_websites and workspace.strip().upper() == 'YES':
-                    qualified_leads.append({
-                        'website': website,
-                        'business_name': business_name.strip(),
-                        'has_workspace': True
-                    })
-            
-            logger.info(f"Found {len(qualified_leads)} qualified leads")
-            return qualified_leads
+        # Get all records with proper column mapping
+        all_records = worksheet.get_all_records()
+        qualified_leads = []
 
-        except Exception as e:
-            logger.error(f"Error processing sheet data: {e}")
-            return []
-            
+        for record in all_records:
+            website = record.get('Website', '').strip()
+            business_name = record.get('Business Name', '').strip()
+            google_workspace = str(record.get('Google Workspace', '')).strip().upper()
+
+            if (website and 
+                website not in processed_websites and 
+                google_workspace == 'YES'):
+                
+                qualified_leads.append({
+                    'website': website,
+                    'business_name': business_name,
+                    'has_workspace': True
+                })
+
+        logger.info(f"Found {len(qualified_leads)} qualified leads")
+        return qualified_leads
+
     except Exception as e:
         logger.error(f"Error in get_qualified_leads: {str(e)}")
-        return []
-                
-        print(f"Found {len(qualified_leads)} new Google Workspace leads to process")
-        return qualified_leads
-    except Exception as e:
-        print(f"Error in get_qualified_leads: {str(e)}")
         return []
