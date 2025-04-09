@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import logging
 import time
+import random
 from openai import OpenAI
 import os
 from dotenv import load_dotenv
@@ -188,26 +189,58 @@ You can book a quick demo here: https://calendar.google.com/calendar/u/0/appoint
     except Exception as e:
         return {"error": str(e)}
 
-def generate_email_with_retry(request: GenerateEmailRequest, max_retries=3):
-    RETRYABLE_ERRORS = {'429', '500', '502', '503'}  # Common temporary errors
+def generate_email_with_retry(request: GenerateEmailRequest, max_retries=3, base_delay=1):
+    RETRYABLE_ERRORS = {
+        '429',  # Rate limit
+        '500',  # Internal server error
+        '502',  # Bad gateway
+        '503',  # Service unavailable
+        '504',  # Gateway timeout
+        'timeout',  # Connection timeout
+        'connection error'  # Generic connection issues
+    }
+    
     for attempt in range(max_retries):
         try:
             response = generate_email(request)
-            time.sleep(1)  # Small delay between successful calls
-            return response
+            if response and not response.get('error'):
+                return response
+            
+            # Handle empty or error responses
+            error_msg = response.get('error') if response else 'Empty response'
+            raise Exception(error_msg)
+            
         except Exception as e:
             error_str = str(e).lower()
-            is_retryable = any(code in error_str for code in RETRYABLE_ERRORS) or 'rate_limit' in error_str
+            is_retryable = (
+                any(code in error_str for code in RETRYABLE_ERRORS) or
+                'rate_limit' in error_str or
+                'capacity' in error_str
+            )
             
             if is_retryable and attempt < max_retries - 1:
-                wait_time = min(2 ** attempt, 8)  # Exponential backoff: 2s, 4s, 8s max
-                logger.warning(f"Temporary error: {str(e)}. Retry {attempt + 1}/{max_retries} in {wait_time}s")
+                # Exponential backoff with jitter
+                wait_time = min(base_delay * (2 ** attempt) * (1 + random.random() * 0.1), 15)
+                logger.warning(
+                    f"Temporary error: {str(e)}. "
+                    f"Attempt {attempt + 1}/{max_retries}. "
+                    f"Retrying in {wait_time:.1f}s"
+                )
                 time.sleep(wait_time)
                 continue
             
-            logger.error(f"Non-retryable error or max retries exceeded: {str(e)}")
-            return {"error": str(e)}
-    return {"error": "Max retries exceeded. Email generation failed."}
+            logger.error(
+                f"{'Retryable' if is_retryable else 'Non-retryable'} "
+                f"error on attempt {attempt + 1}/{max_retries}: {str(e)}"
+            )
+            if attempt == max_retries - 1:
+                return {
+                    "error": f"Failed after {max_retries} attempts. Last error: {str(e)}",
+                    "status": "error",
+                    "attempts": attempt + 1
+                }
+    
+    return {"error": "Max retries exceeded", "status": "error", "attempts": max_retries}
 
 @app.get("/run-campaign")
 @app.get("/run_campaign")  # Support both formats
