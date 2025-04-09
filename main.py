@@ -217,7 +217,7 @@ You can book a quick demo here: https://calendar.google.com/calendar/u/0/appoint
 
         try:
             response = client.chat.completions.create(
-                model="gpt-4",
+                model="gpt-3.5-turbo",
                 messages=[{
                     "role": "system",
                     "content": "You are Jenny, a friendly outreach specialist focused on helping businesses automate their lead responses."
