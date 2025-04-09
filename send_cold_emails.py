@@ -16,23 +16,31 @@ WARM_UP_INCREASE_PERCENT = 15  # Daily increase percentage
 
 def get_warmed_email_limit():
     try:
-        # Read the current day count from a file
-        with open('email_warm_up.txt', 'r') as f:
-            day_count = int(f.read().strip())
-    except FileNotFoundError:
-        day_count = 1
+        # Use absolute path and ensure directory exists
+        warm_up_file = os.path.join(os.path.dirname(__file__), 'email_warm_up.txt')
         
-    # Calculate warmed limit with 15% daily increase
-    warmed_limit = min(
-        MAX_EMAILS_PER_DAY,
-        int(BASE_EMAILS_PER_DAY * (1 + (WARM_UP_INCREASE_PERCENT/100)) ** (day_count-1))
-    )
-    
-    # Save incremented day count
-    with open('email_warm_up.txt', 'w') as f:
-        f.write(str(day_count + 1))
+        try:
+            with open(warm_up_file, 'r') as f:
+                day_count = int(f.read().strip())
+        except (FileNotFoundError, ValueError):
+            day_count = 1
+            
+        # Calculate warmed limit with 15% daily increase
+        warmed_limit = min(
+            MAX_EMAILS_PER_DAY,
+            int(BASE_EMAILS_PER_DAY * (1 + (WARM_UP_INCREASE_PERCENT/100)) ** (day_count-1))
+        )
         
-    return warmed_limit
+        # Save incremented day count
+        with open(warm_up_file, 'w') as f:
+            f.write(str(day_count + 1))
+            
+        logger.info(f"Day {day_count}: Warmed limit set to {warmed_limit} emails")
+        return warmed_limit
+        
+    except Exception as e:
+        logger.error(f"Error in email warm-up tracking: {str(e)}")
+        return BASE_EMAILS_PER_DAY  # Fallback to base limit
 
 # Subject lines to rotate
 SUBJECT_LINES = [

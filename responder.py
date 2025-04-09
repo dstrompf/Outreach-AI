@@ -183,15 +183,20 @@ def check_inbox():
             from_addr = email.utils.parseaddr(email_message['From'])[1]
             subject = email_message['Subject']
 
+            # Extract name from email address or use sender name
+            sender_name = email.utils.parseaddr(email_message['From'])[0]
+            if not sender_name or sender_name == '':
+                sender_name = from_addr.split('@')[0].replace('.', ' ').title()
+
             # Generate response using AI
             response = client.chat.completions.create(
                 model="gpt-4",
                 messages=[{
                     "role": "system",
-                    "content": "You are Jenny, a friendly AI assistant. Respond professionally to emails."
+                    "content": "You are Jenny, a friendly AI assistant. Respond professionally to emails. Always use the person's name in the greeting."
                 }, {
                     "role": "user",
-                    "content": f"Respond to this email subject: {subject}"
+                    "content": f"Respond to this email from {sender_name}, subject: {subject}"
                 }]
             )
 
