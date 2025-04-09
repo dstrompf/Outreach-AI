@@ -15,7 +15,7 @@ run = ["python3", "main.py"]
 deploymentTarget = "cloudrun"
 
 [workflows]
-runButton = "AI Email System"
+runButton = "Local Development"
 
 [[workflows.workflow]]
 name = "Run server"
@@ -55,6 +55,19 @@ args = "python3 responder_server.py &"
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "sleep 2"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python3 main.py"
+
+[[workflows.workflow]]
+name = "Local Development"
+author = 41158153
+mode = "parallel"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python3 responder_server.py"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
