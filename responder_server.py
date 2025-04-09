@@ -49,6 +49,6 @@ if __name__ == "__main__":
         host="0.0.0.0",
         port=3001,
         workers=1,
-        reload=True,
+        reload=False,
         access_log=True
     )
