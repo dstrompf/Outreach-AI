@@ -59,4 +59,4 @@ if __name__ == "__main__":
     print("Testing all services...")
     test_resend()
     test_zoho()
-    test_openai()t_zoho()
+    test_openai()
