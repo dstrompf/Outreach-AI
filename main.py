@@ -111,9 +111,12 @@ def save_generated_email(website, email_content, found_email=""):
             logger.info(f"Attempt {attempt + 1} to save email for {website}")
 
             scopes = [
-            "https://www.googleapis.com/auth/spreadsheets",
-            "https://www.googleapis.com/auth/drive"
-        ]
+                "https://www.googleapis.com/auth/spreadsheets",
+                "https://www.googleapis.com/auth/drive"
+            ]
+        except Exception as e:
+            logger.error(f"Error saving email: {str(e)}")
+            return False
         credentials = Credentials.from_service_account_file(SERVICE_ACCOUNT_FILE, scopes=scopes)
         client = gspread.authorize(credentials)
         sheet = client.open_by_url(
