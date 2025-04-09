@@ -362,14 +362,14 @@ def generate_email(request: GenerateEmailRequest):
     try:
         prompt = f"""You are an AI outreach assistant specializing in Google Workspace solutions.
 
-Task: Write a short, friendly, and personalized cold email to {request.business_name}.
-The business is already using Google Workspace, so mention this connection.
-Focus on how our AI form automation can enhance their existing Google Workspace setup.
+Task: Write a personalized cold email for {request.business_name}, a spa/wellness business. 
+They use Google Workspace. Focus on how AI form automation can enhance their client booking and follow-up process.
 
 Key points to include:
-- Acknowledge their use of Google Workspace
-- Explain how our AI form solution integrates with Google Workspace
-- Offer to show them how other Google Workspace users are benefiting
+- Acknowledge their focus on wellness/spa services
+- Mention how AI automation can help manage client inquiries 24/7
+- Highlight integration with their Google Workspace for seamless scheduling
+- Keep tone warm but professional, matching their wellness industry
 
 Based on this business summary: {request.summary}"""
         response = client.chat.completions.create(
