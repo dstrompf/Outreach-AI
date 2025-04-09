@@ -419,8 +419,9 @@ def run_campaign():
                 # Add delay before OpenAI call
                 time.sleep(5)
 
-        # Connect to sheet with refresh handling
-        scopes = [
+        try:
+            # Connect to sheet with refresh handling
+            scopes = [
             "https://www.googleapis.com/auth/spreadsheets",
             "https://www.googleapis.com/auth/drive"
         ]
