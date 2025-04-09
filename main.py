@@ -206,7 +206,6 @@ if __name__ == "__main__":
         port=5000,
         workers=1,
         log_level="info",
-        reload=True,
-        access_log=True,
-        proxy_headers=True
+        reload=False,
+        access_log=True
     )

@@ -50,6 +50,10 @@ args = "pkill -f \"python3 responder_server.py\" || true"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
+args = "sleep 2"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
 args = "python3 responder_server.py &"
 
 [[workflows.workflow.tasks]]
