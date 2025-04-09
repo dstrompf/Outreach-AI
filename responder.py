@@ -54,35 +54,50 @@ def fetch_unread_emails():
         # Connect to Zoho IMAP server
         mail = imaplib.IMAP4_SSL(IMAP_SERVER, IMAP_PORT)
         logger.info("Connected to IMAP server")
-    mail.login(EMAIL_ACCOUNT, EMAIL_PASSWORD)
-    print("✅ Connected to Jenny's inbox!")
+        mail.login(EMAIL_ACCOUNT, EMAIL_PASSWORD)
+        logger.info("✅ Connected to Jenny's inbox!")
 
-    # Select inbox and get unread emails
-    mail.select('inbox')
-    status, response = mail.search(None, '(UNSEEN)')
-    unread_msg_nums = response[0].split()
+        # Select inbox and get unread emails
+        mail.select('inbox')
+        status, response = mail.search(None, '(UNSEEN)')
+        unread_msg_nums = response[0].split()
+        
+        logger.info(f"Found {len(unread_msg_nums)} unread messages")
+        
+        emails = []
+        for num in unread_msg_nums:
+            try:
+                status, data = mail.fetch(num, '(RFC822)')
+                raw_email = data[0][1]
+                msg = email.message_from_bytes(raw_email)
 
-    emails = []
-    for num in unread_msg_nums:
-        status, data = mail.fetch(num, '(RFC822)')
-        raw_email = data[0][1]
-        msg = email.message_from_bytes(raw_email)
+                subject = msg['subject']
+                from_email = msg['from']
+                
+                # Handle multipart messages
+                if msg.is_multipart():
+                    for part in msg.walk():
+                        if part.get_content_type() == "text/plain":
+                            body = part.get_payload(decode=True).decode()
+                            break
+                else:
+                    body = msg.get_payload(decode=True).decode()
 
-        subject = msg['subject']
-        from_email = msg['from']
-        body = msg.get_payload(decode=True).decode()
-
-        emails.append({
-            "subject": subject,
-            "from_email": from_email,
-            "body": body,
-            "num": num
-        })
-    mail.logout()
-
-    return emails
+                emails.append({
+                    "subject": subject,
+                    "from_email": from_email,
+                    "body": body,
+                    "num": num
+                })
+                logger.info(f"Processed email from: {from_email}")
+            except Exception as e:
+                logger.error(f"Error processing individual email: {e}")
+                continue
+                
+        mail.logout()
+        return emails
     except Exception as e:
-        logger.error(f"Error fetching emails: {e}")
+        logger.error(f"Error in fetch_unread_emails: {e}")
         return []
 
 
