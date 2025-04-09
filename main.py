@@ -115,7 +115,7 @@ def save_generated_email(website, email_content, found_email=""):
                     "https://www.googleapis.com/auth/drive"
                 ]
                 credentials = Credentials.from_service_account_file(SERVICE_ACCOUNT_FILE, scopes=scopes)
-            client = gspread.authorize(credentials)
+                client = gspread.authorize(credentials)
                 sheet = client.open_by_url(
                     "https://docs.google.com/spreadsheets/d/1WbdwNIdbvuCPG_Lh3-mtPCPO8ddLR5RIatcdeq29EPs/edit"
                 )
