@@ -101,9 +101,14 @@ def scrape_website(request: ScrapeRequest):
         return {"error": str(e)}
 
 def save_generated_email(website, email_content, found_email=""):
-    try:
-        SERVICE_ACCOUNT_FILE = os.getenv("GOOGLE_SERVICE_ACCOUNT_FILE", "ai-outreach-sheets-access-24fe56ec7689.json")
-        SPREADSHEET_URL = os.getenv("SPREADSHEET_URL", "https://docs.google.com/spreadsheets/d/1WbdwNIdbvuCPG_Lh3-mtPCPO8ddLR5RIatcdeq29EPs/edit")
+    max_retries = 3
+    retry_delay = 2  # seconds
+    
+    for attempt in range(max_retries):
+        try:
+            SERVICE_ACCOUNT_FILE = os.getenv("GOOGLE_SERVICE_ACCOUNT_FILE", "ai-outreach-sheets-access-24fe56ec7689.json")
+            SPREADSHEET_URL = os.getenv("SPREADSHEET_URL", "https://docs.google.com/spreadsheets/d/1WbdwNIdbvuCPG_Lh3-mtPCPO8ddLR5RIatcdeq29EPs/edit")
+            logger.info(f"Attempt {attempt + 1} to save email for {website}")
 
         scopes = [
             "https://www.googleapis.com/auth/spreadsheets",
@@ -249,6 +254,11 @@ def run_campaign():
         qualified_leads = get_qualified_leads()
         logger.info(f"Found {len(qualified_leads)} qualified leads")
         emails_generated = 0
+        
+        # Process only 3 leads at a time to avoid rate limits
+        batch_size = 3
+        current_batch = qualified_leads[:batch_size]
+        logger.info(f"Processing batch of {len(current_batch)} leads")
 
         for lead in qualified_leads[:5]:  # Process 5 at a time
             try:
