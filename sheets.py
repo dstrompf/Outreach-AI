@@ -31,20 +31,25 @@ def connect_to_sheet():
     return sheet
 
 def get_qualified_leads():
-    sheet = connect_to_sheet()
-    worksheet = sheet.worksheet("Qualified Leads")  # Use specific worksheet name
-    sent_worksheet = sheet.worksheet("Generated Emails")
-    
-    all_rows = worksheet.get_all_records()
-    sent_emails = set(email.strip() for email in sent_worksheet.col_values(3)[1:] if email.strip())  # Column C contains found emails
-    qualified_leads = []
-
-    for row in all_rows:
-        has_workspace = str(row.get('Google Workspace', '')).strip().upper() == 'YES'
-        website = row.get('Website', '').strip()
+    try:
+        sheet = connect_to_sheet()
+        worksheet = sheet.worksheet("Sheet1")  # First tab where data is collected
+        sent_worksheet = sheet.worksheet("Generated Emails")  # Second tab for email generation
         
-        # Check if website's email is not in sent_emails
-        if has_workspace and website:
-            qualified_leads.append(website)
+        all_rows = worksheet.get_all_records()
+        print(f"Found {len(all_rows)} rows in Sheet1")
+        
+        # Get websites that haven't been processed yet
+        processed_websites = set(sent_worksheet.col_values(1)[1:])  # Skip header row
+        qualified_leads = []
 
-    return qualified_leads
+        for row in all_rows:
+            website = row.get('Website', '').strip()
+            if website and website not in processed_websites:
+                qualified_leads.append(website)
+                
+        print(f"Found {len(qualified_leads)} new leads to process")
+        return qualified_leads
+    except Exception as e:
+        print(f"Error in get_qualified_leads: {str(e)}")
+        return []
