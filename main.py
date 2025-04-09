@@ -182,14 +182,22 @@ def home():
 
 @app.get("/system-health")
 def system_health():
-    sheet_status = test_sheets_connection()
-    scheduler_status = scheduler.running
-    return {
-        "google_sheets": "connected" if sheet_status else "disconnected",
-        "scheduler": "running" if scheduler_status else "stopped",
-        "cron_job": "scheduled for 9:00 AM daily",
-        "last_campaign": scheduler.get_job('campaign').next_run_time
-    }
+    from sheets import test_sheets_connection
+    try:
+        sheet_status = test_sheets_connection()
+        scheduler_status = scheduler.running
+        last_run = scheduler.get_job('campaign').next_run_time if scheduler.get_job('campaign') else None
+        return {
+            "google_sheets": "connected" if sheet_status else "disconnected",
+            "scheduler": "running" if scheduler_status else "stopped",
+            "cron_job": "scheduled for 9:00 AM daily",
+            "last_campaign": last_run
+        }
+    except Exception as e:
+        return {
+            "error": str(e),
+            "scheduler": "running" if scheduler.running else "stopped"
+        }
 
 
 @app.get("/test_leads")
