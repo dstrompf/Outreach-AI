@@ -337,8 +337,29 @@ def run_campaign():
                     continue
 
                 first_email = scrape_resp['emails'][0]
-                save_generated_email(website, generate_resp['email'], first_email)
-                emails_generated += 1
+                try:
+                    scopes = [
+                        "https://www.googleapis.com/auth/spreadsheets",
+                        "https://www.googleapis.com/auth/drive"
+                    ]
+                    credentials = Credentials.from_service_account_file(
+                        "ai-outreach-sheets-access-24fe56ec7689.json", scopes=scopes)
+                    client = gspread.authorize(credentials)
+                    sheet = client.open_by_url(
+                        "https://docs.google.com/spreadsheets/d/1WbdwNIdbvuCPG_Lh3-mtPCPO8ddLR5RIatcdeq29EPs/edit"
+                    )
+                    generated_emails_sheet = sheet.worksheet("Generated Emails")
+                    generated_emails_sheet.append_row([
+                        website,
+                        generate_resp['email'],
+                        first_email,
+                        ""  # Status column
+                    ])
+                    logger.info(f"Successfully saved generated email for {website}")
+                    emails_generated += 1
+                except Exception as e:
+                    logger.error(f"Failed to save generated email for {website}: {str(e)}")
+                    continue
                 logger.info(f"Successfully processed {website}")
 
             except Exception as e:
