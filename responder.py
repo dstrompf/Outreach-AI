@@ -180,10 +180,13 @@ def reply_to_email(to_email, original_subject, reply_content, message_id=None, r
         msg['In-Reply-To'] = message_id
         msg['References'] = message_id if not references else f"{references} {message_id}"
     
-    # Always append booking link to responses
-    booking_link = knowledge_base.get("booking", "")
-    booking_url = booking_link.split(":", 1)[1].strip() if ":" in booking_link else booking_link.strip()
-    full_response = f"{reply_content}\n\nWould you like to discuss this further? You can book a time that works best for you here: https{booking_url}"
+    # Only append booking link if not already present in the content
+    if "calendar.google.com" not in reply_content:
+        booking_link = knowledge_base.get("booking", "")
+        booking_url = booking_link.split(":", 1)[1].strip() if ":" in booking_link else booking_link.strip()
+        full_response = f"{reply_content}\n\nWould you like to discuss this further? You can book a time that works best for you here: https{booking_url}"
+    else:
+        full_response = reply_content
     
     body = MIMEText(full_response, 'plain')
     msg.attach(body)
