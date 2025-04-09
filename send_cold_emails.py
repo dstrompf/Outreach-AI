@@ -68,14 +68,14 @@ def connect_to_sheet():
 
 def send_cold_email(to_email, subject, body_html):
     try:
-        resend.Emails.send({
+        response = resend.Emails.send({
             "from": "Jenny from AI Form Reply <info@aiformreply.com>",
             "to": [to_email],
             "subject": subject,
             "html": body_html,
             "reply_to": "jenny@autoformchat.com"
         })
-        print(f"✅ Email sent to {to_email}")
+        print(f"✅ Email sent to {to_email} with ID: {response.id}")
     except Exception as e:
         print(f"❌ Failed to send email to {to_email}: {str(e)}")
 
