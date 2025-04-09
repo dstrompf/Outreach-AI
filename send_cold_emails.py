@@ -14,35 +14,6 @@ BASE_EMAILS_PER_DAY = 5  # Starting point
 MAX_EMAILS_PER_DAY = 200  # Maximum cap
 WARM_UP_INCREASE_PERCENT = 15  # Daily increase percentage
 
-def get_warmed_email_limit():
-    try:
-        # Use absolute path and ensure directory exists
-        warm_up_file = os.path.join(os.path.dirname(__file__), 'email_warm_up.txt')
-        
-        try:
-            with open(warm_up_file, 'r') as f:
-                day_count = int(f.read().strip())
-        except (FileNotFoundError, ValueError):
-            day_count = 1
-            
-        # Calculate warmed limit with 15% daily increase
-        warmed_limit = min(
-            MAX_EMAILS_PER_DAY,
-            int(BASE_EMAILS_PER_DAY * (1 + (WARM_UP_INCREASE_PERCENT/100)) ** (day_count-1))
-        )
-        
-        # Save incremented day count
-        with open(warm_up_file, 'w') as f:
-            f.write(str(day_count + 1))
-            
-        logger.info(f"Day {day_count}: Warmed limit set to {warmed_limit} emails")
-        return warmed_limit
-        
-    except Exception as e:
-        logger.error(f"Error in email warm-up tracking: {str(e)}")
-        return BASE_EMAILS_PER_DAY  # Fallback to base limit
-
-# Subject lines to rotate
 SUBJECT_LINES = [
     "Quick question about your growth",
     "AI could help your team respond faster",
@@ -50,7 +21,6 @@ SUBJECT_LINES = [
     "Faster lead follow-up for your team",
     "Can I share something that might help?"
 ]
-
 
 def connect_to_sheet():
     scopes = [
@@ -65,7 +35,6 @@ def connect_to_sheet():
     )
     return sheet.worksheet("Generated Emails")
 
-
 def send_cold_email(to_email, subject, body_html):
     try:
         response = resend.Emails.send({
@@ -76,18 +45,40 @@ def send_cold_email(to_email, subject, body_html):
             "reply_to": "jenny@autoformchat.com"
         })
         print(f"✅ Email sent to {to_email} with ID: {response.id}")
+        return True
     except Exception as e:
         print(f"❌ Failed to send email to {to_email}: {str(e)}")
+        return False
 
+def get_warmed_email_limit():
+    try:
+        warm_up_file = 'email_warm_up.txt'
+        try:
+            with open(warm_up_file, 'r') as f:
+                day_count = int(f.read().strip())
+        except (FileNotFoundError, ValueError):
+            day_count = 1
+
+        warmed_limit = min(
+            MAX_EMAILS_PER_DAY,
+            int(BASE_EMAILS_PER_DAY * (1 + (WARM_UP_INCREASE_PERCENT/100)) ** (day_count-1))
+        )
+
+        with open(warm_up_file, 'w') as f:
+            f.write(str(day_count + 1))
+
+        print(f"Day {day_count}: Warmed limit set to {warmed_limit} emails")
+        return warmed_limit
+
+    except Exception as e:
+        print(f"Error in email warm-up tracking: {str(e)}")
+        return BASE_EMAILS_PER_DAY
 
 def run_cold_email_campaign():
     try:
         worksheet = connect_to_sheet()
         data = worksheet.get_all_records()
 
-        daily_limit = get_warmed_email_limit()
-        print(f"📈 Today's warmed email limit: {daily_limit}")
-        
         # Filter for unsent leads with valid emails
         unsent_leads = [
             row for row in data 
@@ -95,49 +86,37 @@ def run_cold_email_campaign():
             and row.get('Found Email')
             and '@' in row.get('Found Email', '')
         ]
-        
+
+        daily_limit = get_warmed_email_limit()
+        print(f"📈 Today's warmed email limit: {daily_limit}")
+
         leads_to_send = unsent_leads[:daily_limit]
         print(f"📬 Found {len(unsent_leads)} unsent leads, sending {len(leads_to_send)} today...")
-        
+
         for lead in leads_to_send:
             website = lead.get('Website')
             email_content = lead.get('Email Content')
             to_email = lead.get('Found Email')
-            
+
             if not all([website, email_content, to_email]):
                 print(f"❌ Missing data for {website}")
                 continue
 
-    for lead in leads_to_send:
-        website = lead.get('Website')
-        email_content = lead.get('Email Content')
-        to_email = lead.get('Found Email')
+            subject = random.choice(SUBJECT_LINES)
+            if send_cold_email(to_email, subject, email_content):
+                try:
+                    cell = worksheet.find(website)
+                    if cell:
+                        worksheet.update_cell(cell.row, 4, "Sent")
+                        print(f"✅ Marked {website} as sent in row {cell.row}")
+                except Exception as e:
+                    print(f"❌ Failed to mark {website} as sent: {str(e)}")
+                    time.sleep(2)
 
-        if not all([website, email_content, to_email]):
-            print(f"❌ Missing data for {website}")
-            continue
+            time.sleep(random.randint(30, 90))
 
-        subject = random.choice(SUBJECT_LINES)
-        send_cold_email(to_email, subject, email_content)
-
-        try:
-            cell = worksheet.find(website)
-            if cell:
-                worksheet.update_cell(cell.row, 4, "Sent")
-                print(f"✅ Marked {website} as sent in row {cell.row}")
-                
-                updated_value = worksheet.cell(cell.row, 4).value
-                if updated_value != "Sent":
-                    print(f"⚠️ Update verification failed for {website}")
-            else:
-                print(f"❌ Could not find row for website: {website}")
-                
-        except Exception as e:
-            print(f"❌ Failed to mark {website} as sent: {str(e)}")
-            time.sleep(2)
-
-        time.sleep(random.randint(30, 90))
-
+    except Exception as e:
+        print(f"❌ Campaign failed: {str(e)}")
 
 if __name__ == "__main__":
     run_cold_email_campaign()
