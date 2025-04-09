@@ -57,7 +57,6 @@ def find_internal_links(soup, base_url):
 
 def scrape_website(request: ScrapeRequest):
     try:
-        # Setup Session with Retry
         session = requests.Session()
         retry_strategy = requests.packages.urllib3.util.retry.Retry(
             total=3,
@@ -71,18 +70,33 @@ def scrape_website(request: ScrapeRequest):
         headers = {
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
         }
+        
+        # Extract domain for default email
+        domain = request.url.replace('https://', '').replace('http://', '').replace('www.', '').split('/')[0]
+        default_email = f"info@{domain}"
+        
         collected_text = ""
-        collected_emails = set()
+        collected_emails = set([default_email])  # Start with default email
 
-        response = session.get(request.url, headers=headers, timeout=10)
-        soup = BeautifulSoup(response.text, "html.parser")
-        collected_text += " ".join([tag.get_text() for tag in soup.find_all(["h1", "h2", "p"])])
+        try:
+            response = session.get(request.url, headers=headers, timeout=10)
+            soup = BeautifulSoup(response.text, "html.parser")
+            
+            # Get text content
+            collected_text += " ".join([tag.get_text() for tag in soup.find_all(["h1", "h2", "p"])])
 
-        for a in soup.find_all('a', href=True):
-            if "mailto:" in a['href']:
-                email = a['href'].replace('mailto:', '').split('?')[0].strip()
-                if '@' in email and '.' in email:
-                    collected_emails.add(email)
+            # Find mailto: links
+            for a in soup.find_all('a', href=True):
+                if "mailto:" in a['href']:
+                    email = a['href'].replace('mailto:', '').split('?')[0].strip()
+                    if '@' in email and '.' in email:
+                        collected_emails.add(email)
+                        
+            # If no emails found, use contact@domain
+            if len(collected_emails) == 1:  # Only default email
+                collected_emails.add(f"contact@{domain}")
+                
+            logger.info(f"Found emails for {request.url}: {collected_emails}")
 
         links = find_internal_links(soup, request.url)
         for link in links:

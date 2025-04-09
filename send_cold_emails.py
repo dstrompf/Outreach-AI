@@ -81,14 +81,32 @@ def send_cold_email(to_email, subject, body_html):
 
 
 def run_cold_email_campaign():
-    worksheet = connect_to_sheet()
-    data = worksheet.get_all_records()
+    try:
+        worksheet = connect_to_sheet()
+        data = worksheet.get_all_records()
 
-    daily_limit = get_warmed_email_limit()
-    print(f"📈 Today's warmed email limit: {daily_limit}")
-    unsent_leads = [row for row in data if not row.get('Sent?')]
-    leads_to_send = unsent_leads[:daily_limit]
-    print(f"📬 Sending {len(leads_to_send)} cold emails today...")
+        daily_limit = get_warmed_email_limit()
+        print(f"📈 Today's warmed email limit: {daily_limit}")
+        
+        # Filter for unsent leads with valid emails
+        unsent_leads = [
+            row for row in data 
+            if row.get('Status') != 'Sent' 
+            and row.get('Found Email')
+            and '@' in row.get('Found Email', '')
+        ]
+        
+        leads_to_send = unsent_leads[:daily_limit]
+        print(f"📬 Found {len(unsent_leads)} unsent leads, sending {len(leads_to_send)} today...")
+        
+        for lead in leads_to_send:
+            website = lead.get('Website')
+            email_content = lead.get('Email Content')
+            to_email = lead.get('Found Email')
+            
+            if not all([website, email_content, to_email]):
+                print(f"❌ Missing data for {website}")
+                continue
 
     for lead in leads_to_send:
         website = lead.get('Website')
