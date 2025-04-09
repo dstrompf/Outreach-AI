@@ -202,8 +202,14 @@ def system_health():
 
 @app.get("/test_leads")
 def test_leads():
-    qualified = get_qualified_leads()
-    return {"qualified_leads": qualified}
+    try:
+        qualified = get_qualified_leads()
+        if not qualified:
+            return {"status": "No qualified leads found", "qualified_leads": []}
+        return {"status": "success", "qualified_leads": qualified}
+    except Exception as e:
+        logger.error(f"Error in test_leads endpoint: {str(e)}")
+        return {"status": "error", "message": str(e)}
 
 
 @app.post("/scrape")
