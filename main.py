@@ -395,9 +395,30 @@ def run_campaign():
         logger.info(f"Found {len(qualified_leads)} qualified leads")
         emails_generated = 0
 
-        for lead in qualified_leads[:2]:  # Process 2 at a time to avoid rate limits
+        # Connect to sheet once before loop
+        scopes = [
+            "https://www.googleapis.com/auth/spreadsheets",
+            "https://www.googleapis.com/auth/drive"
+        ]
+        credentials = Credentials.from_service_account_file(
+            "ai-outreach-sheets-access-24fe56ec7689.json", scopes=scopes)
+        gc = gspread.authorize(credentials)
+        sheet = gc.open_by_url(
+            "https://docs.google.com/spreadsheets/d/1WbdwNIdbvuCPG_Lh3-mtPCPO8ddLR5RIatcdeq29EPs/edit"
+        )
+        generated_emails_sheet = sheet.worksheet("Generated Emails")
+        
+        # Get existing websites to avoid duplicates
+        existing_websites = generated_emails_sheet.col_values(1)[1:]  # Skip header
+        logger.info(f"Found {len(existing_websites)} existing processed websites")
+
+        for lead in qualified_leads[:5]:  # Process 5 at a time
             try:
                 website = lead['website']
+                if website in existing_websites:
+                    logger.info(f"Skipping {website} - already processed")
+                    continue
+                    
                 logger.info(f"Processing website: {website}")
 
                 scrape_resp = scrape_website(ScrapeRequest(url=website))
@@ -409,7 +430,7 @@ def run_campaign():
                     logger.info(f"No emails found for {website}")
                     continue
 
-                time.sleep(2)  # Longer delay between API calls
+                time.sleep(2)  # Delay between API calls
 
                 # More conservative retry logic
                 max_retries = 2
@@ -449,23 +470,16 @@ def run_campaign():
                     first_email = scrape_resp['emails'][0]
 
                     logger.info(f"Writing to sheet - Website: {website}, Email: {first_email}")
-                    scopes = [
-                        "https://www.googleapis.com/auth/spreadsheets",
-                        "https://www.googleapis.com/auth/drive"
-                    ]
-                    credentials = Credentials.from_service_account_file(
-                        "ai-outreach-sheets-access-24fe56ec7689.json", scopes=scopes)
-                    client = gspread.authorize(credentials)
-                    sheet = client.open_by_url(
-                        "https://docs.google.com/spreadsheets/d/1WbdwNIdbvuCPG_Lh3-mtPCPO8ddLR5RIatcdeq29EPs/edit"
-                    )
-                    generated_emails_sheet = sheet.worksheet("Generated Emails")
+                    # Use existing sheet connection
                     generated_emails_sheet.append_row([
                         website,
                         generated_email,
                         first_email,
-                        ""  # Status column
+                        "Pending"  # Status column
                     ])
+                    existing_websites.append(website)  # Update local cache
+                    emails_generated += 1
+                    logger.info(f"Successfully saved email for {website}")
                     logger.info(f"Successfully saved generated email for {website}")
                     emails_generated += 1
                 except Exception as e:
