@@ -222,9 +222,10 @@ if __name__ == "__main__":
     import uvicorn
     uvicorn.run(
         app,
-        host="0.0.0.0", 
+        host="0.0.0.0",
         port=5000,
         reload=False,
         log_level="info",
-        workers=1
+        workers=1,
+        access_log=True
     )
