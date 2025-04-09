@@ -1,4 +1,3 @@
-
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -104,13 +103,12 @@ def save_generated_email(website, email_content, found_email=""):
 
         # Check for existing websites
         existing_websites = worksheet.col_values(1)
-        logger.info(f"Found {len(existing_websites)} existing processed websites")
-        
         if website in existing_websites:
             logger.info(f"Website {website} already exists. Skipping save.")
             return False
-            
+
         worksheet.append_row([website, email_content, found_email, "Pending"])
+        logger.info(f"Found {len(existing_websites)} existing processed websites")
         logger.info(f"Saved new website: {website}")
         return True
     except Exception as e:
