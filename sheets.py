@@ -33,7 +33,7 @@ def connect_to_sheet():
 
 def get_qualified_leads():
     sheet = connect_to_sheet()
-    worksheet = sheet.sheet1
+    worksheet = sheet.get_worksheet(0)  # Gets first worksheet
     sent_worksheet = sheet.worksheet("Generated Emails")
     
     all_rows = worksheet.get_all_records()
