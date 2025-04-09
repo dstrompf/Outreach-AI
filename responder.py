@@ -133,7 +133,13 @@ def generate_reply(email_body, from_email):
     try:
         # Get context from initial correspondence
         context = get_initial_correspondence(from_email)
-        system_prompt = """You are Jenny, a helpful AI assistant. Respond naturally and professionally to inquiries about AI Form Reply. 
+        system_prompt = f"""You are Jenny, a helpful AI assistant. Use only these approved responses for key topics:
+
+Features: {knowledge_base['features']}
+Pricing: {knowledge_base['pricing']}
+Demo Request: {knowledge_base['demo_response']}
+
+Respond naturally and professionally to inquiries about AI Form Reply. 
         Always try to guide the conversation towards booking a meeting, but do so naturally based on their interest level. 
         Keep responses concise and focused."""
         

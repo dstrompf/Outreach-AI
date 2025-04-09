@@ -189,7 +189,9 @@ def scrape_website(request: ScrapeRequest):
 
         for a in soup.find_all('a', href=True):
             if "mailto:" in a['href']:
-                collected_emails.add(a['href'].replace('mailto:', ''))
+                email = a['href'].replace('mailto:', '').strip()
+                if '@' in email and '.' in email and ' ' not in email:
+                    collected_emails.add(email)
 
         links = find_internal_links(soup, request.url)
         important_links = [
@@ -316,3 +318,31 @@ scheduler.start()
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=5000)
+
+
+
+@app.get("/test_email_scraping")
+def test_email_scraping():
+    test_websites = [
+        "https://www.example.com",  # Replace with real test URLs
+        "https://www.test.com"
+    ]
+    results = []
+    
+    for website in test_websites:
+        try:
+            scrape_resp = scrape_website(ScrapeRequest(url=website))
+            results.append({
+                "website": website,
+                "success": "error" not in scrape_resp,
+                "emails_found": scrape_resp.get("emails", []),
+                "error": scrape_resp.get("error", None)
+            })
+        except Exception as e:
+            results.append({
+                "website": website,
+                "success": False,
+                "error": str(e)
+            })
+    
+    return {"results": results}
