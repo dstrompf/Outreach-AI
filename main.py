@@ -548,6 +548,10 @@ async def test_scraping(encoded_url: str):
         url = base64.b64decode(encoded_url).decode('utf-8')
         logger.info(f"Testing website scraping for: {url}")
         
+        # Validate URL format
+        if not url.startswith(('http://', 'https://')):
+            url = 'https://' + url
+            
         # Test main page scraping
         scrape_result = scrape_website(ScrapeRequest(url=url))
         
