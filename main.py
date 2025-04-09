@@ -318,8 +318,8 @@ scheduler.start()
 @app.get("/test_email_scraping")
 def test_email_scraping():
     test_websites = [
-        "https://www.example.com",  # Replace with real test URLs
-        "https://www.test.com"
+        "https://www.python.org",
+        "https://www.github.com"
     ]
     results = []
     
