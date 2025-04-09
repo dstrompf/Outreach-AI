@@ -103,11 +103,24 @@ def run_cold_email_campaign():
         send_cold_email(to_email, subject, email_content)
 
         try:
+            # Find the website row
             cell = worksheet.find(website)
-            worksheet.update_cell(cell.row, cell.col + 2, "Yes")
-            print(f"✅ Marked {website} as sent.")
+            if cell:
+                # Update Status column (4th column) to "Sent"
+                worksheet.update_cell(cell.row, 4, "Sent")
+                print(f"✅ Marked {website} as sent in row {cell.row}")
+                
+                # Verify the update
+                updated_value = worksheet.cell(cell.row, 4).value
+                if updated_value != "Sent":
+                    print(f"⚠️ Update verification failed for {website}")
+                    
+            else:
+                print(f"❌ Could not find row for website: {website}")
+                
         except Exception as e:
             print(f"❌ Failed to mark {website} as sent: {str(e)}")
+            time.sleep(2)  # Back off on API error
 
         time.sleep(random.randint(30, 90))
 
