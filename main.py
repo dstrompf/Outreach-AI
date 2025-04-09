@@ -420,17 +420,17 @@ def run_campaign():
                 time.sleep(5)
 
                 # Attempt to connect to Google Sheets
-                scopes = [
-            "https://www.googleapis.com/auth/spreadsheets",
-            "https://www.googleapis.com/auth/drive"
-        ]
-        credentials = Credentials.from_service_account_file(
-            "ai-outreach-sheets-access-24fe56ec7689.json", scopes=scopes)
-        gc = gspread.authorize(credentials)
-        
-        # Test connection and refresh if needed
-        try:
-            gc.list_spreadsheet_files()
+                try:
+                    scopes = [
+                        "https://www.googleapis.com/auth/spreadsheets",
+                        "https://www.googleapis.com/auth/drive"
+                    ]
+                    credentials = Credentials.from_service_account_file(
+                        "ai-outreach-sheets-access-24fe56ec7689.json", scopes=scopes)
+                    gc = gspread.authorize(credentials)
+                    
+                    # Test connection and refresh if needed
+                    gc.list_spreadsheet_files()
         except Exception as e:
             logger.warning("Refreshing sheets connection...")
             credentials = Credentials.from_service_account_file(
