@@ -2,6 +2,17 @@
 import gspread
 from google.oauth2.service_account import Credentials
 
+def test_sheets_connection():
+    try:
+        worksheet = connect_to_sheet()
+        if worksheet:
+            logger.info("✅ Successfully connected to Google Sheets")
+            return True
+        return False
+    except Exception as e:
+        logger.error(f"❌ Failed to connect to Google Sheets: {e}")
+        return False
+
 def connect_to_sheet():
     scopes = [
         "https://www.googleapis.com/auth/spreadsheets",

@@ -157,6 +157,17 @@ def send_outreach_emails_daily():
 def home():
     return {"message": "AI Outreach System Online"}
 
+@app.get("/system-health")
+def system_health():
+    sheet_status = test_sheets_connection()
+    scheduler_status = scheduler.running
+    return {
+        "google_sheets": "connected" if sheet_status else "disconnected",
+        "scheduler": "running" if scheduler_status else "stopped",
+        "cron_job": "scheduled for 9:00 AM daily",
+        "last_campaign": scheduler.get_job('campaign').next_run_time
+    }
+
 
 @app.get("/test_leads")
 def test_leads():
@@ -288,8 +299,14 @@ scheduler = BackgroundScheduler()
 
 
 def scheduled_campaign():
-    print("Running scheduled campaign...")
-    run_campaign()
+    logger.info("🔄 Starting scheduled campaign...")
+    try:
+        result = run_campaign()
+        logger.info(f"✅ Campaign completed: {result}")
+    except Exception as e:
+        logger.error(f"❌ Campaign failed: {e}")
+        
+scheduler.add_job(scheduled_campaign, 'cron', hour=9, minute=0, id='campaign')
 
 
 scheduler.add_job(scheduled_campaign, 'cron', hour=9, minute=0)
