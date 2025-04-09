@@ -32,16 +32,20 @@ def connect_to_sheet():
     return worksheet
 
 def get_qualified_leads():
-    worksheet = connect_to_sheet()
+    sheet = connect_to_sheet()
+    worksheet = sheet.sheet1
+    sent_worksheet = sheet.worksheet("Generated Emails")
+    
     all_rows = worksheet.get_all_records()
+    sent_emails = set(email.strip() for email in sent_worksheet.col_values(3)[1:] if email.strip())  # Column C contains found emails
     qualified_leads = []
 
     for row in all_rows:
         has_workspace = str(row.get('Google Workspace', '')).strip().upper() == 'YES'
-        has_email = bool(row.get('Email', '').strip())
         website = row.get('Website', '').strip()
-
-        if has_workspace and has_email and website:
+        
+        # Check if website's email is not in sent_emails
+        if has_workspace and website:
             qualified_leads.append(website)
 
     return qualified_leads
