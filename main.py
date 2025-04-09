@@ -101,17 +101,20 @@ def save_generated_email(website, email_content, found_email=""):
         )
         worksheet = sheet.worksheet("Generated Emails")
 
-        # Check for existing websites
-        existing_websites = worksheet.col_values(1)
-        if website in existing_websites:
-            logger.info(f"Website {website} already exists. Skipping save.")
-            return False
+        try:
+            # Check for existing websites
+            existing_websites = worksheet.col_values(1)
+            if website in existing_websites:
+                logger.info(f"Website {website} already exists. Skipping save.")
+                return False
 
-        worksheet.append_row([website, email_content, found_email, "Pending"])
-        logger.info(f"Found {len(existing_websites)} existing processed websites")
-        logger.info(f"Saved new website: {website}")
-        return True
-    except Exception as e:
+            worksheet.append_row([website, email_content, found_email, "Pending"])
+            logger.info(f"Found {len(existing_websites)} existing processed websites")
+            logger.info(f"Saved new website: {website}")
+            return True
+        except Exception as e:
+            logger.error(f"Failed to save email: {str(e)}")
+            return False
         logger.error(f"Failed to save email: {str(e)}")
         return False
 
