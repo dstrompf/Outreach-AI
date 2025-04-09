@@ -391,16 +391,30 @@ Based on this business summary: {request.summary}"""
 @app.get("/run-campaign")
 def run_campaign():
     try:
-        # Add delay between API calls
-        time.sleep(2)
-        
         qualified_leads = get_qualified_leads()
         logger.info(f"Found {len(qualified_leads)} qualified leads")
         emails_generated = 0
-        
-        # Process fewer leads at a time
-        batch_size = 3
-        current_batch = qualified_leads[:batch_size]
+
+        # Process one lead at a time with longer delays
+        for lead in qualified_leads[:1]:
+            try:
+                website = lead['website']
+                logger.info(f"Processing website: {website}")
+
+                # Add 5 second delay between each API call
+                time.sleep(5)
+                
+                scrape_resp = scrape_website(ScrapeRequest(url=website))
+                if 'error' in scrape_resp:
+                    logger.error(f"Scraping failed for {website}: {scrape_resp['error']}")
+                    continue
+
+                if not scrape_resp.get('emails'):
+                    logger.info(f"No emails found for {website}")
+                    continue
+
+                # Add delay before OpenAI call
+                time.sleep(5)
 
         # Connect to sheet with refresh handling
         scopes = [
