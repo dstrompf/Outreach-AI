@@ -15,16 +15,13 @@ import requests
 from bs4 import BeautifulSoup
 from urllib.parse import urljoin
 
-
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-
 # ----- SETUP -----
 load_dotenv()
 app = FastAPI()
-
 
 # Configure CORS
 app.add_middleware(
@@ -35,20 +32,16 @@ app.add_middleware(
     allow_headers=["*"]
 )
 
-
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 resend.api_key = os.getenv("RESEND_API_KEY")
-
 
 # ----- MODELS -----
 class ScrapeRequest(BaseModel):
     url: str
 
-
 class GenerateEmailRequest(BaseModel):
     business_name: str
     summary: str
-
 
 # ----- HELPERS -----
 def find_internal_links(soup, base_url):
@@ -60,7 +53,6 @@ def find_internal_links(soup, base_url):
                 full_url = urljoin(base_url, href)
                 links.append(full_url)
     return links[:3]
-
 
 def scrape_website(request: ScrapeRequest):
     try:
@@ -96,7 +88,6 @@ def scrape_website(request: ScrapeRequest):
     except Exception as e:
         return {"error": str(e)}
 
-
 def save_generated_email(website, email_content, found_email=""):
     try:
         scopes = [
@@ -110,10 +101,15 @@ def save_generated_email(website, email_content, found_email=""):
             "https://docs.google.com/spreadsheets/d/1WbdwNIdbvuCPG_Lh3-mtPCPO8ddLR5RIatcdeq29EPs/edit"
         )
         worksheet = sheet.worksheet("Generated Emails")
+
+        # Check for existing websites
         existing_websites = worksheet.col_values(1)
+        logger.info(f"Found {len(existing_websites)} existing processed websites")
+        
         if website in existing_websites:
             logger.info(f"Website {website} already exists. Skipping save.")
             return False
+            
         worksheet.append_row([website, email_content, found_email, "Pending"])
         logger.info(f"Saved new website: {website}")
         return True
@@ -121,12 +117,10 @@ def save_generated_email(website, email_content, found_email=""):
         logger.error(f"Failed to save email: {str(e)}")
         return False
 
-
 # ----- ROUTES -----
 @app.get("/")
 def home():
     return {"message": "AI Outreach System Online"}
-
 
 @app.post("/generate_email")
 def generate_email(request: GenerateEmailRequest):
@@ -151,7 +145,6 @@ Keep it short, friendly, and focused on how AI form automation can help their bu
         return {"email": response.choices[0].message.content}
     except Exception as e:
         return {"error": str(e)}
-
 
 @app.get("/run-campaign")
 def run_campaign():
@@ -201,7 +194,6 @@ def run_campaign():
     except Exception as e:
         logger.error(f"Campaign failed: {str(e)}")
         return {"error": str(e)}
-
 
 if __name__ == "__main__":
     import uvicorn
