@@ -264,7 +264,9 @@ Based on this business summary: {request.summary}."""
 @app.get("/run_campaign")
 def run_campaign():
     try:
+        print("Starting campaign...")
         qualified_leads = get_qualified_leads()
+        print(f"Found {len(qualified_leads)} qualified leads")
         emails_generated = 0
 
         for website in qualified_leads:
