@@ -1,0 +1,31 @@
+To ensure that the automation and cron job work correctly with Google Sheets as initially set up, you can ask the assistant to verify and test several important areas in the process:
+
+1. Google Sheets Integration
+	•	Check if the correct Google Sheets document is being used: Ensure that the system is pointing to the right Google Sheets document for storing and retrieving the generated emails.
+	•	Ask: “Can you confirm that the Google Sheets document used by the AI Email System is the one we’re currently working with?”
+	•	Ensure correct reading and writing to Google Sheets: Check if the app correctly reads from and writes to the Google Sheets, especially regarding qualified leads and email responses.
+	•	Ask: “Can you verify that the scraper correctly extracts website details and stores them in Google Sheets, and that generated emails are saved properly?”
+
+2. Email Generation and Outreach
+	•	Verify the email generation logic: Confirm that the email content is being generated and stored in Google Sheets correctly and that the run_campaign function reads the right data to send the email outreach.
+	•	Ask: “Can you make sure that when the run_campaign cron job runs, it correctly retrieves qualified leads from Google Sheets and generates personalized cold emails for each one?”
+	•	Check for the email sending process: Ensure the system is correctly sending emails via the Resend API and that the response and email data are properly logged and tracked in Google Sheets.
+	•	Ask: “Is the email sending process linked to Google Sheets working correctly? Are emails sent tracked under the ‘Status’ column, and does the system stop after 10 emails per day?”
+
+3. Cron Job and Scheduled Tasks
+	•	Verify the cron job for the email campaign: Ensure that the cron job for run_campaign is triggering at 9:00 AM daily and properly working.
+	•	Ask: “Can you check if the cron job for running the email campaign at 9:00 AM daily is functioning as expected?”
+	•	Check if the email responder process is running continuously: Confirm that the automated email responder is continuously checking the inbox and processing responses as they come in.
+	•	Ask: “Can you confirm that the email responder process is continuously running and correctly replying to incoming emails, especially checking the inbox and sending responses to valid inquiries?”
+
+4. System Health and Logging
+	•	Verify system health check: Make sure the system health check API /health is working and giving the correct response, indicating that both the main server and the responder server are working.
+	•	Ask: “Can you ensure that the /health endpoint is functioning and that both servers (main API and responder server) are running smoothly?”
+	•	Check logs for errors: Ensure that any errors are logged appropriately so you can debug issues if they arise. Make sure logging is enabled for critical actions like email sending, email responses, and Google Sheets interactions.
+	•	Ask: “Are errors and important events logged properly? Can you confirm that logs are being generated for important steps, such as email sending and email reply handling?”
+
+5. General Automation Testing
+	•	Test the complete flow: Run a test to confirm that the scraper pulls data, the email generation works, the emails are stored in Google Sheets, and the cron job sends the emails, with responses tracked and logged correctly.
+	•	Ask: “Can you run a full test to ensure that the entire process — from scraping websites to email sending and reply handling — works without any issues?”
+
+By asking these questions, you can ensure that the automation cron is properly integrated with the Google Sheets doc, the email campaigns are running as expected, and the email responses are being handled correctly.
