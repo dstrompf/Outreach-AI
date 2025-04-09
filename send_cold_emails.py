@@ -79,39 +79,37 @@ def run_cold_email_campaign():
         worksheet = connect_to_sheet()
         data = worksheet.get_all_records()
 
-        # Filter for unsent leads with valid emails
-        unsent_leads = [
-            row for row in data 
-            if row.get('Status') != 'Sent' 
-            and row.get('Found Email')
-            and '@' in row.get('Found Email', '')
-        ]
+        #No change needed here.
 
         daily_limit = get_warmed_email_limit()
         print(f"📈 Today's warmed email limit: {daily_limit}")
 
-        leads_to_send = unsent_leads[:daily_limit]
-        print(f"📬 Found {len(unsent_leads)} unsent leads, sending {len(leads_to_send)} today...")
+        leads_to_send = data[:daily_limit] #Send all leads within the daily limit.
+        print(f"📬 Found {len(data)} leads, sending {len(leads_to_send)} today...")
 
         for lead in leads_to_send:
             website = lead.get('Website')
             email_content = lead.get('Email Content')
             to_email = lead.get('Found Email')
+            status = lead.get('Status')
 
             if not all([website, email_content, to_email]):
                 print(f"❌ Missing data for {website}")
                 continue
 
-            subject = random.choice(SUBJECT_LINES)
-            if send_cold_email(to_email, subject, email_content):
-                try:
-                    cell = worksheet.find(website)
-                    if cell:
-                        worksheet.update_cell(cell.row, 4, "Sent")
-                        print(f"✅ Marked {website} as sent in row {cell.row}")
-                except Exception as e:
-                    print(f"❌ Failed to mark {website} as sent: {str(e)}")
-                    time.sleep(2)
+            if status != "Sent": #Check if email is already sent
+                subject = random.choice(SUBJECT_LINES)
+                if send_cold_email(to_email, subject, email_content):
+                    try:
+                        cell = worksheet.find(website)
+                        if cell:
+                            worksheet.update_cell(cell.row, 4, "Sent")
+                            print(f"✅ Marked {website} as sent in row {cell.row}")
+                    except Exception as e:
+                        print(f"❌ Failed to mark {website} as sent: {str(e)}")
+                        time.sleep(2)
+            else:
+                print(f"Email already sent to {website}") #Inform if already sent
 
             time.sleep(random.randint(30, 90))
 

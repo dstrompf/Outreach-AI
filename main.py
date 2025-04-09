@@ -338,9 +338,10 @@ def run_campaign():
                     continue
 
                 first_email = scrape_resp['emails'][0]
-                if save_generated_email(website, generate_resp['email'], first_email):
-                    emails_generated += 1
-                    logger.info(f"Successfully processed {website}")
+                # Always try to save, but don't stop if already exists
+                save_generated_email(website, generate_resp['email'], first_email)
+                emails_generated += 1
+                logger.info(f"Successfully processed {website}")
 
             except Exception as e:
                 logger.error(f"Error processing {website}: {str(e)}")
