@@ -163,6 +163,10 @@ def is_system_email(subject, from_email, body):
     from_lower = from_email.lower() if from_email else ""
     subject_lower = subject.lower() if subject else ""
     
+    # Block emails from aiformreply.com domain
+    if "@aiformreply.com" in from_lower:
+        return True
+    
     # Check both subject and sender for system indicators
     return any(indicator in from_lower or indicator in subject_lower for indicator in system_indicators)
 
