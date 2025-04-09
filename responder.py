@@ -124,7 +124,7 @@ def send_email(to_email, subject, content, max_retries=3):
     for attempt in range(max_retries):
         try:
             msg = MIMEMultipart()
-            msg['From'] = "Jenny from AI Form Reply <info@aiformreply.com>"
+            msg['From'] = "Jenny from AI Form Reply <jenny@autoformchat.com>"
             msg['To'] = to_email
             msg['Subject'] = subject
             msg['Reply-To'] = "jenny@autoformchat.com"
