@@ -42,11 +42,7 @@ mode = "parallel"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "pkill -f \"python3 main.py\" || true"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "pkill -f \"python3 responder_server.py\" || true"
+args = "pkill -f uvicorn || true"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"

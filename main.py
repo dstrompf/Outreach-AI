@@ -201,11 +201,11 @@ def run_campaign():
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(
-        app,
-        host="0.0.0.0",
+        "main:app",
+        host="0.0.0.0", 
         port=5000,
-        workers=1,
+        reload=True,
         log_level="info",
-        reload=False,
-        access_log=True
+        proxy_headers=True,
+        forwarded_allow_ips="*"
     )
