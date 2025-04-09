@@ -1,4 +1,3 @@
-
 module.exports = {
   apps: [
     {
@@ -10,15 +9,9 @@ module.exports = {
       exec_mode: "fork",
       autorestart: true,
       watch: false,
-      max_memory_restart: '1G',
       env: {
-        NODE_ENV: "production",
         PYTHONUNBUFFERED: "1"
-      },
-      error_file: "logs/main-error.log",
-      out_file: "logs/main-out.log",
-      merge_logs: true,
-      log_date_format: "YYYY-MM-DD HH:mm:ss Z"
+      }
     },
     {
       name: "responder_server",
@@ -29,15 +22,9 @@ module.exports = {
       exec_mode: "fork",
       autorestart: true,
       watch: false,
-      max_memory_restart: '1G',
       env: {
-        NODE_ENV: "production",
         PYTHONUNBUFFERED: "1"
-      },
-      error_file: "logs/responder-error.log",
-      out_file: "logs/responder-out.log",
-      merge_logs: true,
-      log_date_format: "YYYY-MM-DD HH:mm:ss Z"
+      }
     }
   ]
 }
