@@ -226,30 +226,61 @@ def test_leads():
 @app.post("/scrape")
 def scrape_website(request: ScrapeRequest):
     try:
-        headers = {"User-Agent": "Mozilla/5.0"}
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
+        }
         collected_text = ""
         collected_emails = set()
 
+        # Get main page
         response = requests.get(request.url, headers=headers, timeout=10)
         soup = BeautifulSoup(response.text, "html.parser")
-        collected_text += " ".join(
-            [tag.get_text() for tag in soup.find_all(["h1", "h2", "p"])])
+        collected_text += " ".join([tag.get_text() for tag in soup.find_all(["h1", "h2", "p"])])
 
-        # Check mailto links
+        # Find emails on main page
         for a in soup.find_all('a', href=True):
-            if "mailto:" in a['href']:
-                email = a['href'].replace('mailto:', '').strip()
+            if "mailto:" in a['href'].lower():
+                email = a['href'].replace('mailto:', '').split('?')[0].strip()
                 if '@' in email and '.' in email:
                     collected_emails.add(email)
 
-        # Check text content for email patterns
-        text = soup.get_text()
-        words = text.split()
-        for word in words:
-            if '@' in word and '.' in word and ' ' not in word:
-                email = word.strip('.,()[]{}')
-                if email.count('@') == 1:
-                    collected_emails.add(email)
+        # Check contact and about pages
+        contact_links = []
+        for a in soup.find_all('a', href=True):
+            href = a['href'].lower()
+            if any(x in href for x in ['contact', 'about', 'team']):
+                if href.startswith('/'):
+                    href = request.url.rstrip('/') + '/' + href.lstrip('/')
+                elif not href.startswith('http'):
+                    href = request.url.rstrip('/') + '/' + href
+                contact_links.append(href)
+
+        # Visit contact pages
+        for link in set(contact_links[:3]):  # Limit to 3 pages
+            try:
+                resp = requests.get(link, headers=headers, timeout=10)
+                sub_soup = BeautifulSoup(resp.text, "html.parser")
+                
+                # Get text content
+                collected_text += " ".join([tag.get_text() for tag in sub_soup.find_all(["h1", "h2", "p"])])
+                
+                # Check for emails in contact page
+                for a in sub_soup.find_all('a', href=True):
+                    if "mailto:" in a['href'].lower():
+                        email = a['href'].replace('mailto:', '').split('?')[0].strip()
+                        if '@' in email and '.' in email:
+                            collected_emails.add(email)
+                
+                # Look for email patterns in text
+                text = sub_soup.get_text()
+                import re
+                email_pattern = r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b'
+                found_emails = re.findall(email_pattern, text)
+                collected_emails.update(found_emails)
+                
+            except Exception as e:
+                logger.error(f"Error scraping contact page {link}: {str(e)}")
+                continue
 
 
         links = find_internal_links(soup, request.url)
