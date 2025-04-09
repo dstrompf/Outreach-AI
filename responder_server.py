@@ -45,12 +45,14 @@ def health():
 
 
 if __name__ == "__main__":
+    import os
     import uvicorn
+    
+    port = int(os.environ.get("RESPONDER_PORT", 3001))
     uvicorn.run(
-        app,
+        "responder_server:app",
         host="0.0.0.0",
-        port=3001,
+        port=port,
         reload=False,
-        workers=1,
-        access_log=True
+        workers=1
     )
