@@ -15,7 +15,7 @@ run = ["python3", "main.py"]
 deploymentTarget = "cloudrun"
 
 [workflows]
-runButton = "Run server"
+runButton = "AI Email System"
 
 [[workflows.workflow]]
 name = "Run server"
@@ -42,11 +42,23 @@ mode = "parallel"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "python3 main.py"
+args = "pkill -f \"python3 main.py\" || true"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "python3 responder_server.py"
+args = "pkill -f \"python3 responder_server.py\" || true"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python3 responder_server.py &"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "sleep 2"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python3 main.py"
 
 [[ports]]
 localPort = 3000

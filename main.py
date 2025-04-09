@@ -28,7 +28,8 @@ app.add_middleware(
     allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
-    allow_headers=["*"]
+    allow_headers=["*"],
+    expose_headers=["*"]
 )
 
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
@@ -199,4 +200,13 @@ def run_campaign():
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=5000, workers=1, log_level="info")
+    uvicorn.run(
+        app,
+        host="0.0.0.0",
+        port=5000,
+        workers=1,
+        log_level="info",
+        reload=True,
+        access_log=True,
+        proxy_headers=True
+    )
