@@ -188,20 +188,21 @@ You can book a quick demo here: https://calendar.google.com/calendar/u/0/appoint
     except Exception as e:
         return {"error": str(e)}
 
-def generate_email_with_retry(request: GenerateEmailRequest, max_retries=3, base_delay=2):
+def generate_email_with_retry(request: GenerateEmailRequest, max_retries=3):
     for attempt in range(max_retries):
         try:
             response = generate_email(request)
-            time.sleep(base_delay)  # Basic rate limiting
+            time.sleep(1)  # Small delay to avoid hitting limits again
             return response
         except Exception as e:
-            if "429" in str(e) and attempt < max_retries - 1:
-                retry_delay = base_delay * (2 ** attempt)  # Exponential backoff
-                logger.info(f"Rate limited, waiting {retry_delay} seconds before retry")
-                time.sleep(retry_delay)
+            if ("429" in str(e) or "rate_limit" in str(e).lower()) and attempt < max_retries - 1:
+                wait_time = 2 ** attempt  # Exponential backoff: 2s, 4s, 8s
+                logger.info(f"Rate limited by OpenAI. Waiting {wait_time} seconds before retry #{attempt + 2}...")
+                time.sleep(wait_time)
                 continue
-            raise e
-    return {"error": "Max retries exceeded"}
+            logger.error(f"Error generating email: {str(e)}")
+            return {"error": str(e)}
+    return {"error": "Max retries exceeded. Email generation failed."}
 
 @app.get("/run-campaign")
 @app.get("/run_campaign")  # Support both formats
