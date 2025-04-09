@@ -53,11 +53,14 @@ knowledge_base = {
 def fetch_unread_emails():
     log_email_check()
     try:
-        # Connect to Zoho IMAP server
-        mail = imaplib.IMAP4_SSL(IMAP_SERVER, IMAP_PORT)
+        # Connect to Zoho IMAP server with longer timeout
+        mail = imaplib.IMAP4_SSL(IMAP_SERVER, IMAP_PORT, timeout=30)
         logger.info("Connected to IMAP server")
         mail.login(EMAIL_ACCOUNT, EMAIL_PASSWORD)
         logger.info("✅ Connected to Jenny's inbox!")
+        
+        # Set longer socket timeout after connection
+        mail.socket().settimeout(60)
 
         # Select inbox and get unread emails
         mail.select('inbox')
@@ -279,8 +282,8 @@ def process_emails():
                     )
                     logger.info(f"✅ Reply sent to {email['from_email']}")
                     
-                    # Wait for 2-3 minutes before processing next email
-                    wait_time = random.randint(120, 180)
+                    # Wait for 3-5 minutes before processing next email
+                    wait_time = random.randint(180, 300)
                     logger.info(f"⏳ Waiting {wait_time} seconds before next email...")
                     time.sleep(wait_time)
             except Exception as e:
