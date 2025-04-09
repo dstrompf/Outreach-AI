@@ -2,6 +2,8 @@ import imaplib
 import email
 import os
 import time
+import random
+import traceback
 from dotenv import load_dotenv
 from openai import OpenAI
 
@@ -48,9 +50,10 @@ knowledge_base = {
 
 def fetch_unread_emails():
     log_email_check()
-    # Connect to Zoho IMAP server
-    mail = imaplib.IMAP4_SSL(IMAP_SERVER, IMAP_PORT)
-    logger.info("Connected to IMAP server")
+    try:
+        # Connect to Zoho IMAP server
+        mail = imaplib.IMAP4_SSL(IMAP_SERVER, IMAP_PORT)
+        logger.info("Connected to IMAP server")
     mail.login(EMAIL_ACCOUNT, EMAIL_PASSWORD)
     print("✅ Connected to Jenny's inbox!")
 
@@ -78,6 +81,9 @@ def fetch_unread_emails():
     mail.logout()
 
     return emails
+    except Exception as e:
+        logger.error(f"Error fetching emails: {e}")
+        return []
 
 
 def generate_reply(email_body):
@@ -123,19 +129,32 @@ def reply_to_email(to_email, subject, reply_content):
 
 
 def process_emails():
-    emails = fetch_unread_emails()
-    for email in emails:
-        print(
-            f"📥 New email from {email['from_email']} with subject {email['subject']}"
-        )
-
-        # Generate a reply based on the email content
-        reply_content = generate_reply(email['body'])
-        reply_to_email(email['from_email'], email['subject'], reply_content)
-
-        # Wait for 5 to 10 minutes before sending the reply
-        print("⏳ Waiting before replying...")
-        time.sleep(5 * 60)  # Wait 5 minutes (300 seconds)
+    try:
+        logger.info("Starting email processing cycle")
+        emails = fetch_unread_emails()
+        logger.info(f"Found {len(emails)} unread emails")
+        
+        for email in emails:
+            try:
+                logger.info(f"📥 Processing email from {email['from_email']} with subject {email['subject']}")
+                
+                # Generate a reply based on the email content
+                reply_content = generate_reply(email['body'])
+                if reply_content:
+                    reply_to_email(email['from_email'], email['subject'], reply_content)
+                    logger.info(f"✅ Reply sent to {email['from_email']}")
+                    
+                    # Wait for 2-3 minutes before processing next email
+                    wait_time = random.randint(120, 180)
+                    logger.info(f"⏳ Waiting {wait_time} seconds before next email...")
+                    time.sleep(wait_time)
+            except Exception as e:
+                logger.error(f"Error processing individual email: {e}")
+                continue
+                
+        logger.info("Completed email processing cycle")
+    except Exception as e:
+        logger.error(f"Error in process_emails: {e}")
 
 
 if __name__ == "__main__":
