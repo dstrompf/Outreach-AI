@@ -490,15 +490,24 @@ if __name__ == "__main__":
 async def test_scraping(encoded_url: str):
     import base64
     try:
-        # Decode URL from base64 to handle special characters
         url = base64.b64decode(encoded_url).decode('utf-8')
+        logger.info(f"Testing website scraping for: {url}")
+        
+        # Test main page scraping
         scrape_result = scrape_website(ScrapeRequest(url=url))
+        
+        # Get internal links
+        soup = BeautifulSoup(requests.get(url).text, "html.parser")
+        internal_links = find_internal_links(soup, url)
+        
         return {
             "url": url,
             "success": "error" not in scrape_result,
             "text_sample": scrape_result.get("text", "")[:200] if "text" in scrape_result else None,
             "emails_found": scrape_result.get("emails", []),
+            "internal_pages_checked": internal_links,
             "error": scrape_result.get("error", None)
         }
     except Exception as e:
+        logger.error(f"Error in test_scraping: {str(e)}")
         return {"error": str(e)}
