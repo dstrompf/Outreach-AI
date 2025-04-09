@@ -23,10 +23,17 @@ load_dotenv()
 app = FastAPI()
 
 # Configure CORS
+origins = [
+    "https://ba3c7980-a535-436d-9025-fe98ea1ea6d3-00-267pm637h0fei.worf.replit.dev",
+    "http://0.0.0.0:5000",
+    "http://localhost:5000",
+    "*"
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=False,
+    allow_origins=origins,
+    allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"]
 )
@@ -401,4 +408,11 @@ def test_email_scraping():
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=5000)
+    uvicorn.run(
+        "main:app",
+        host="0.0.0.0",
+        port=5000,
+        reload=True,
+        access_log=True,
+        workers=1
+    )
