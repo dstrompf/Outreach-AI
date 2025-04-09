@@ -1,0 +1,124 @@
+Amazing progress.
+Now you’re deep into real testing — and what you’re seeing is expected behavior at this stage.
+
+Let’s break down your logs carefully and explain what’s happening:
+
+⸻
+
+🧠 What the logs show
+
+Log	What It Means
+Started server process [4024]	Uvicorn server started successfully. ✅
+GET /health and GET / returning 200 OK	/ and /health endpoints are working perfectly. ✅
+Found 6296 qualified leads	Your Google Sheets pull is working fine. ✅
+POST https://api.openai.com/v1/chat/completions "429 Too Many Requests"	OpenAI is rate limiting your email generation. 🚨
+Email generation failed for http://www.umbrellalosangeles.com/	Because of OpenAI rate limiting, email generation failed.
+No emails found for	Scraper did not find any emails on the website.
+
+
+
+⸻
+
+🚨 Main Problems Now (New)
+	1.	429 Too Many Requests
+	•	You are hitting OpenAI’s rate limit.
+	•	OpenAI is saying: “You are sending too many API requests too fast.”
+	2.	No Emails Found
+	•	Your scraper is visiting websites but finding no emails on them.
+
+⸻
+
+📋 Quick Solutions to Each Problem
+
+Problem	Solution
+429 Too Many Requests	Slow down your requests. Add a sleep(1-2 seconds) between each OpenAI call.
+No Emails Found	Improve the scraper to look deeper (e.g., contact pages) or expand internal links.
+
+
+
+⸻
+
+🛠️ How to fix OpenAI 429 errors (Step-by-Step)
+
+Inside your run_campaign() logic:
+
+Add a small sleep after every OpenAI call, like this:
+
+import time
+
+@app.get("/run-campaign")
+def run_campaign():
+    ...
+    for lead in qualified_leads[:5]:
+        ...
+        generate_resp = generate_email(
+            GenerateEmailRequest(
+                business_name=lead.get('business_name', website),
+                summary=summary
+            )
+        )
+
+        # ADD A SLEEP
+        time.sleep(2)  # Sleep 2 seconds between OpenAI requests
+
+        if 'error' in generate_resp:
+            logger.error(f"Email generation failed for {website}")
+            continue
+        ...
+
+✅ This will dramatically lower the risk of 429 errors.
+
+(You could even make it smarter by retrying with exponential backoff — if you want later.)
+
+⸻
+
+🛠️ How to fix “No emails found” (optional deeper scraping)
+
+If you want to find more emails, you can:
+	•	Scrape more pages (e.g., /contact, /about, /team).
+	•	Scrape footer and header of pages (emails often hide there).
+	•	Scrape contact forms and detect email fields.
+
+This would be a Phase 2 improvement after you stabilize your OpenAI usage.
+
+⸻
+
+🎯 Summary Right Now
+
+Status	Result
+Server setup	✅ Working
+Health checks	✅ Working
+Run campaign	⚠️ Working but hitting OpenAI rate limit
+Email scraping	⚠️ Working but no emails found
+
+
+
+⸻
+
+🧠 Big Picture:
+
+✅ You fixed all server and port issues!
+✅ Your app is running properly now.
+✅ Your /run-campaign endpoint works but needs slight adjustments to avoid 429 errors.
+
+⸻
+
+🔥 Next Steps
+
+Step	Action
+1	Add time.sleep(2) after each OpenAI call
+2	(Optional) Improve scraper to find more emails
+3	(Optional) Add better retry logic for OpenAI failures
+
+
+
+⸻
+
+💬 Would you like me to show you also how to add a “smart retry” system for OpenAI 429 errors?
+
+(It would automatically wait and retry if OpenAI says “too many requests” instead of failing completely.)
+Super useful if you’re running bigger campaigns 🚀
+
+👉 Ready to add that if you want! 🎯
+Let me know!
+You’re very close to a fully working system 🔥
