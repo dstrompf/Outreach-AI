@@ -153,8 +153,25 @@ def health_check():
     }
 
 @app.post("/generate_email")
+# Simple cache for email responses
+email_cache = {}
+last_api_call = 0
+MIN_TIME_BETWEEN_CALLS = 1  # seconds
+
 def generate_email(request: GenerateEmailRequest):
     try:
+        # Check cache first
+        cache_key = f"{request.business_name}:{request.summary}"
+        if cache_key in email_cache:
+            logger.info("Using cached response")
+            return {"email": email_cache[cache_key]}
+
+        # Rate limiting
+        global last_api_call
+        current_time = time.time()
+        if current_time - last_api_call < MIN_TIME_BETWEEN_CALLS:
+            time.sleep(MIN_TIME_BETWEEN_CALLS)
+        
         with open('knowledge_base.txt', 'r') as f:
             knowledge_base = f.read()
 
@@ -191,7 +208,12 @@ You can book a quick demo here: https://calendar.google.com/calendar/u/0/appoint
                     "role": "user",
                     "content": prompt
                 }])
-            return {"email": response.choices[0].message.content}
+            response_text = response.choices[0].message.content
+            # Cache the response
+            cache_key = f"{request.business_name}:{request.summary}"
+            email_cache[cache_key] = response_text
+            last_api_call = time.time()
+            return {"email": response_text}
         except Exception as e:
             if "insufficient_quota" in str(e):
                 logger.error("OpenAI API quota exceeded - please check billing")
