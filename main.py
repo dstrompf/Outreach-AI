@@ -140,7 +140,7 @@ def home():
 @app.get("/health")
 def health_check():
     return {
-        "status": "healthy",
+        "status": "ok",
         "service": "main",
         "port": 5000
     }

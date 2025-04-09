@@ -33,15 +33,14 @@ responder_thread.start()
 
 @app.get("/")
 def home():
-    return {"message": "Jenny AI Responder is running!", "status": "active"}
+    return {"message": "AI Responder System Online"}
 
 @app.get("/health")
 def health():
     return {
-        "status": "healthy",
+        "status": "ok",
         "service": "responder",
-        "port": 3001,
-        "responder_thread_alive": responder_thread.is_alive()
+        "port": 3001
     }
 
 
