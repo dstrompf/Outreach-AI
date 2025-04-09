@@ -148,28 +148,62 @@ def connect_to_sheet():
         return None
 
 def save_generated_email(website, email_content, found_email=""):
-    try:
-        worksheet = connect_to_sheet()
-        if not worksheet:
-            raise Exception("Could not connect to worksheet")
+    max_retries = 3
+    retry_delay = 2
+    
+    for attempt in range(max_retries):
+        try:
+            worksheet = connect_to_sheet()
+            if not worksheet:
+                raise Exception("Could not connect to worksheet")
 
-        # Check for existing entry
-        existing_websites = worksheet.col_values(1)
-        if website in existing_websites:
-            row_num = existing_websites.index(website) + 1
-            worksheet.update_cell(row_num, 2, email_content)
-            if found_email:
-                worksheet.update_cell(row_num, 3, found_email)
-            logger.info(f"Updated existing entry for {website}")
-        else:
-            worksheet.append_row([
-                website,
-                email_content,
-                found_email,
-                "Pending"
-            ])
-            logger.info(f"Added new entry for {website}")
-        return True
-    except Exception as e:
-        logger.error(f"Failed to save email for {website}: {str(e)}")
-        return False
+            # Check for existing entry with retry
+            try:
+                existing_websites = worksheet.col_values(1)
+            except Exception as e:
+                logger.warning(f"Retrying to get column values: {str(e)}")
+                time.sleep(retry_delay)
+                existing_websites = worksheet.col_values(1)
+
+            if website in existing_websites:
+                row_num = existing_websites.index(website) + 1
+                
+                # Update with retry
+                try:
+                    worksheet.update_cell(row_num, 2, email_content)
+                    if found_email:
+                        worksheet.update_cell(row_num, 3, found_email)
+                    logger.info(f"Updated existing entry for {website}")
+                except Exception as e:
+                    if attempt == max_retries - 1:
+                        raise e
+                    logger.warning(f"Retrying update for {website}: {str(e)}")
+                    time.sleep(retry_delay * (attempt + 1))
+                    continue
+            else:
+                # Append with retry
+                try:
+                    worksheet.append_row([
+                        website,
+                        email_content,
+                        found_email,
+                        "Pending"
+                    ])
+                    logger.info(f"Added new entry for {website}")
+                except Exception as e:
+                    if attempt == max_retries - 1:
+                        raise e
+                    logger.warning(f"Retrying append for {website}: {str(e)}")
+                    time.sleep(retry_delay * (attempt + 1))
+                    continue
+            
+            return True
+
+        except Exception as e:
+            if attempt == max_retries - 1:
+                logger.error(f"Failed to save email for {website} after {max_retries} attempts: {str(e)}")
+                return False
+            logger.warning(f"Attempt {attempt + 1} failed, retrying: {str(e)}")
+            time.sleep(retry_delay * (attempt + 1))
+    
+    return False
