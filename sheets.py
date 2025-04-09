@@ -39,17 +39,30 @@ def connect_to_sheet():
 def get_qualified_leads():
     try:
         sheet = connect_to_sheet()
+        if not sheet:
+            logger.error("Failed to connect to sheet")
+            return []
+            
         worksheet = sheet.worksheet("Sheet1")  # First tab where data is collected
         sent_worksheet = sheet.worksheet("Generated Emails")  # Second tab for email generation
         
         # Process in batches of 100 to avoid rate limits
         batch_size = 100
         qualified_leads = []
-        processed_websites = set(sent_worksheet.col_values(1)[1:])  # Skip header row
+        
+        try:
+            processed_websites = set(sent_worksheet.col_values(1)[1:])  # Skip header row
+        except Exception as e:
+            logger.error(f"Error getting processed websites: {e}")
+            processed_websites = set()
         
         # Get total rows count
-        all_rows = worksheet.get_all_records()
-        print(f"Found {len(all_rows)} rows in Sheet1")
+        try:
+            all_rows = worksheet.get_all_records()
+            logger.info(f"Found {len(all_rows)} rows in Sheet1")
+        except Exception as e:
+            logger.error(f"Error getting records: {e}")
+            return []
         
         # Process in batches
         for i in range(0, len(all_rows), batch_size):
