@@ -110,7 +110,7 @@ def save_generated_email(website, email_content, found_email=""):
             SPREADSHEET_URL = os.getenv("SPREADSHEET_URL", "https://docs.google.com/spreadsheets/d/1WbdwNIdbvuCPG_Lh3-mtPCPO8ddLR5RIatcdeq29EPs/edit")
             logger.info(f"Attempt {attempt + 1} to save email for {website}")
 
-        scopes = [
+            scopes = [
             "https://www.googleapis.com/auth/spreadsheets",
             "https://www.googleapis.com/auth/drive"
         ]
