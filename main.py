@@ -240,11 +240,18 @@ def summarize(request: SummarizeRequest):
 @app.post("/generate_email")
 def generate_email(request: GenerateEmailRequest):
     try:
-        prompt = f"""You are an AI outreach assistant for a marketing agency.
+        prompt = f"""You are an AI outreach assistant specializing in Google Workspace solutions.
 
 Task: Write a short, friendly, and personalized cold email to {request.business_name}.
+The business is already using Google Workspace, so mention this connection.
+Focus on how our AI form automation can enhance their existing Google Workspace setup.
 
-Based on this business summary: {request.summary}."""
+Key points to include:
+- Acknowledge their use of Google Workspace
+- Explain how our AI form solution integrates with Google Workspace
+- Offer to show them how other Google Workspace users are benefiting
+
+Based on this business summary: {request.summary}"""
         response = client.chat.completions.create(
             model="gpt-4",
             messages=[{

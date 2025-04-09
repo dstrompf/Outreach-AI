@@ -45,10 +45,16 @@ def get_qualified_leads():
 
         for row in all_rows:
             website = row.get('Website', '').strip()
-            if website and website not in processed_websites:
-                qualified_leads.append(website)
+            google_workspace = str(row.get('Google Workspace', '')).strip().upper() == 'YES'
+            
+            if website and website not in processed_websites and google_workspace:
+                qualified_leads.append({
+                    'website': website,
+                    'business_name': row.get('Business Name', '').strip(),
+                    'has_workspace': True
+                })
                 
-        print(f"Found {len(qualified_leads)} new leads to process")
+        print(f"Found {len(qualified_leads)} new Google Workspace leads to process")
         return qualified_leads
     except Exception as e:
         print(f"Error in get_qualified_leads: {str(e)}")
