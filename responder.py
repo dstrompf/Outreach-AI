@@ -221,10 +221,14 @@ def is_system_email(subject, from_email, body):
     # Check both subject and sender for system indicators
     return any(indicator in from_lower or indicator in subject_lower for indicator in system_indicators)
 
+# Track processed message IDs to prevent duplicates
+processed_messages = set()
+
 def process_emails():
     try:
         logger.info("Starting email processing cycle")
         logger.info(f"Using email account: {EMAIL_ACCOUNT}")
+        global processed_messages
         
         # Verify IMAP connection
         try:
@@ -243,10 +247,12 @@ def process_emails():
             try:
                 logger.info(f"📥 Processing email from {email['from_email']} with subject {email['subject']}")
                 
-                # Skip system emails
-                if is_system_email(email['subject'], email['from_email'], email['body']):
-                    logger.info("Skipping system email")
+                # Skip system emails and already processed messages
+                message_id = email.get('message_id', '')
+                if is_system_email(email['subject'], email['from_email'], email['body']) or message_id in processed_messages:
+                    logger.info("Skipping system/duplicate email")
                     continue
+                processed_messages.add(message_id)
                 
                 # Generate a reply based on the email content
                 reply_content = generate_reply(email['body'], email['from_email'])
