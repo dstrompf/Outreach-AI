@@ -103,7 +103,7 @@ def scrape_website(request: ScrapeRequest):
 def save_generated_email(website, email_content, found_email=""):
     max_retries = 3
     retry_delay = 2  # seconds
-    
+
     for attempt in range(max_retries):
         try:
             SERVICE_ACCOUNT_FILE = os.getenv("GOOGLE_SERVICE_ACCOUNT_FILE", "ai-outreach-sheets-access-24fe56ec7689.json")
@@ -114,33 +114,30 @@ def save_generated_email(website, email_content, found_email=""):
                 "https://www.googleapis.com/auth/spreadsheets",
                 "https://www.googleapis.com/auth/drive"
             ]
-        except Exception as e:
-            logger.error(f"Error saving email: {str(e)}")
-            return False
-        credentials = Credentials.from_service_account_file(SERVICE_ACCOUNT_FILE, scopes=scopes)
-        client = gspread.authorize(credentials)
-        sheet = client.open_by_url(
-            "https://docs.google.com/spreadsheets/d/1WbdwNIdbvuCPG_Lh3-mtPCPO8ddLR5RIatcdeq29EPs/edit"
-        )
-        try:
-            worksheet = sheet.worksheet("Generated Emails")
+            credentials = Credentials.from_service_account_file(SERVICE_ACCOUNT_FILE, scopes=scopes)
+            client = gspread.authorize(credentials)
+            sheet = client.open_by_url(
+                "https://docs.google.com/spreadsheets/d/1WbdwNIdbvuCPG_Lh3-mtPCPO8ddLR5RIatcdeq29EPs/edit"
+            )
+            try:
+                worksheet = sheet.worksheet("Generated Emails")
 
-            # Check for existing websites
-            existing_websites = worksheet.col_values(1)
-            if website in existing_websites:
-                logger.info(f"Website {website} already exists. Skipping save.")
+                # Check for existing websites
+                existing_websites = worksheet.col_values(1)
+                if website in existing_websites:
+                    logger.info(f"Website {website} already exists. Skipping save.")
+                    return False
+
+                worksheet.append_row([website, email_content, found_email, "Pending"])
+                logger.info(f"Found {len(existing_websites)} existing processed websites")
+                logger.info(f"Saved new website: {website}")
+                return True
+            except Exception as e:
+                logger.error(f"Failed to save email: {str(e)}")
                 return False
-
-            worksheet.append_row([website, email_content, found_email, "Pending"])
-            logger.info(f"Found {len(existing_websites)} existing processed websites")
-            logger.info(f"Saved new website: {website}")
-            return True
         except Exception as e:
             logger.error(f"Failed to save email: {str(e)}")
             return False
-    except Exception as e:
-        logger.error(f"Failed to save email: {str(e)}")
-        return False
 
 # ----- ROUTES -----
 @app.get("/")
@@ -165,13 +162,13 @@ def generate_email(request: GenerateEmailRequest):
     try:
         # Cost tracking
         logger.info(f"OpenAI API call for {request.business_name}")
-        
+
         # Check cache with fuzzy matching
         for cached_key in email_cache:
             if request.business_name.lower() in cached_key.lower():
                 logger.info("Using similar business cached response")
                 return {"email": email_cache[cached_key]}
-            
+
         # Token optimization
         prompt = f"""Business: {request.business_name}
 Summary: {request.summary[:500]}  # Limit summary length
@@ -182,7 +179,7 @@ Task: Write a short cold email."""
         current_time = time.time()
         if current_time - last_api_call < MIN_TIME_BETWEEN_CALLS:
             time.sleep(MIN_TIME_BETWEEN_CALLS)
-        
+
         with open('knowledge_base.txt', 'r') as f:
             knowledge_base = f.read()
 
@@ -246,17 +243,17 @@ def generate_email_with_retry(request: GenerateEmailRequest, max_retries=3, base
         'timeout',  # Connection timeout
         'connection error'  # Generic connection issues
     }
-    
+
     for attempt in range(max_retries):
         try:
             response = generate_email(request)
             if response and not response.get('error'):
                 return response
-            
+
             # Handle empty or error responses
             error_msg = response.get('error') if response else 'Empty response'
             raise Exception(error_msg)
-            
+
         except Exception as e:
             error_str = str(e).lower()
             is_retryable = (
@@ -264,7 +261,7 @@ def generate_email_with_retry(request: GenerateEmailRequest, max_retries=3, base
                 'rate_limit' in error_str or
                 'capacity' in error_str
             )
-            
+
             if is_retryable and attempt < max_retries - 1:
                 # Exponential backoff with jitter
                 wait_time = min(base_delay * (2 ** attempt) * (1 + random.random() * 0.1), 15)
@@ -275,7 +272,7 @@ def generate_email_with_retry(request: GenerateEmailRequest, max_retries=3, base
                 )
                 time.sleep(wait_time)
                 continue
-            
+
             logger.error(
                 f"{'Retryable' if is_retryable else 'Non-retryable'} "
                 f"error on attempt {attempt + 1}/{max_retries}: {str(e)}"
@@ -286,7 +283,7 @@ def generate_email_with_retry(request: GenerateEmailRequest, max_retries=3, base
                     "status": "error",
                     "attempts": attempt + 1
                 }
-    
+
     return {"error": "Max retries exceeded", "status": "error", "attempts": max_retries}
 
 @app.get("/run-campaign")
@@ -296,7 +293,7 @@ def run_campaign():
         qualified_leads = get_qualified_leads()
         logger.info(f"Found {len(qualified_leads)} qualified leads")
         emails_generated = 0
-        
+
         # Process only 3 leads at a time to avoid rate limits
         batch_size = 3
         current_batch = qualified_leads[:batch_size]
