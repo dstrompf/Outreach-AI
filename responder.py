@@ -54,13 +54,27 @@ def connect_to_sheet():
         "https://www.googleapis.com/auth/spreadsheets",
         "https://www.googleapis.com/auth/drive"
     ]
-    credentials = Credentials.from_service_account_file(
-        "ai-outreach-sheets-access-24fe56ec7689.json", scopes=scopes)
-    client = gspread.authorize(credentials)
-    sheet = client.open_by_url(
-        "https://docs.google.com/spreadsheets/d/1WbdwNIdbvuCPG_Lh3-mtPCPO8ddLR5RIatcdeq29EPs/edit"
-    )
-    return sheet
+    try:
+        credentials = Credentials.from_service_account_file(
+            "ai-outreach-sheets-access-24fe56ec7689.json", scopes=scopes)
+        client = gspread.authorize(credentials)
+        
+        # Test connection and refresh if needed
+        try:
+            client.list_spreadsheet_files()
+        except Exception:
+            logger.warning("Refreshing credentials...")
+            credentials = Credentials.from_service_account_file(
+                "ai-outreach-sheets-access-24fe56ec7689.json", scopes=scopes)
+            client = gspread.authorize(credentials)
+            
+        sheet = client.open_by_url(
+            "https://docs.google.com/spreadsheets/d/1WbdwNIdbvuCPG_Lh3-mtPCPO8ddLR5RIatcdeq29EPs/edit"
+        )
+        return sheet
+    except Exception as e:
+        logger.error(f"Failed to connect to sheet: {str(e)}")
+        return None
 
 def find_emails_on_page(url):
     try:

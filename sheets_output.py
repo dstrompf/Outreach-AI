@@ -1,5 +1,6 @@
-# main.py (UPDATED)
-
+import gspread
+from google.oauth2.service_account import Credentials
+import logging
 from fastapi import FastAPI
 from pydantic import BaseModel
 import requests
@@ -7,8 +8,9 @@ from bs4 import BeautifulSoup
 from openai import OpenAI
 import os
 from dotenv import load_dotenv
-from sheets import get_qualified_leads
-from sheets_output import save_generated_email
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 load_dotenv()
 
@@ -35,7 +37,7 @@ def home():
 
 @app.get("/test_leads")
 def test_leads():
-    qualified = get_qualified_leads()
+    qualified = get_qualified_leads() # Assuming get_qualified_leads is defined elsewhere
     return {"qualified_leads": qualified}
 
 @app.post("/scrape")
@@ -96,12 +98,16 @@ def generate_email(request: GenerateEmailRequest):
 @app.get("/run_campaign")
 def run_campaign():
     try:
-        qualified_leads = get_qualified_leads()
+        qualified_leads = get_qualified_leads() # Assuming get_qualified_leads is defined elsewhere
         for website in qualified_leads:
             # 1. Scrape
             scrape_resp = scrape_website(ScrapeRequest(url=website))
             if 'error' in scrape_resp:
                 continue
+
+            # 2. Find Email (Added)
+            email_resp = find_email(FindEmailRequest(url=website))
+            found_email = email_resp["emails"][0] if email_resp["emails"] else ""
 
             # 2. Summarize
             summarize_resp = summarize(SummarizeRequest(text=scrape_resp['text']))
@@ -117,17 +123,53 @@ def run_campaign():
                 continue
 
             # 4. Save to Sheet
-            save_generated_email(website, generate_resp['email'])
+            save_generated_email(website, generate_resp['email'], found_email)
 
         return {"status": "Campaign completed"}
     except Exception as e:
         return {"error": str(e)}
 
 
-def save_generated_email(website, email_content):
+def connect_to_sheet():
+    scopes = [
+        "https://www.googleapis.com/auth/spreadsheets",
+        "https://www.googleapis.com/auth/drive"
+    ]
+    try:
+        credentials = Credentials.from_service_account_file(
+            "ai-outreach-sheets-access-24fe56ec7689.json", scopes=scopes)
+        client = gspread.authorize(credentials)
+        sheet = client.open_by_url(
+            "https://docs.google.com/spreadsheets/d/1WbdwNIdbvuCPG_Lh3-mtPCPO8ddLR5RIatcdeq29EPs/edit"
+        )
+        return sheet.worksheet("Generated Emails")
+    except Exception as e:
+        logger.error(f"Failed to connect to sheet: {str(e)}")
+        return None
+
+def save_generated_email(website, email_content, found_email=""):
     try:
         worksheet = connect_to_sheet()
-        worksheet.append_row([website, email_content])
-        return {"status": "Campaign email saved to sheet"}
+        if not worksheet:
+            raise Exception("Could not connect to worksheet")
+
+        # Check for existing entry
+        existing_websites = worksheet.col_values(1)
+        if website in existing_websites:
+            row_num = existing_websites.index(website) + 1
+            worksheet.update_cell(row_num, 2, email_content)
+            if found_email:
+                worksheet.update_cell(row_num, 3, found_email)
+            logger.info(f"Updated existing entry for {website}")
+        else:
+            worksheet.append_row([
+                website,
+                email_content,
+                found_email,
+                "Pending"
+            ])
+            logger.info(f"Added new entry for {website}")
+        return True
     except Exception as e:
-        return {"error": str(e)}
+        logger.error(f"Failed to save email for {website}: {str(e)}")
+        return False
