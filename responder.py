@@ -108,18 +108,17 @@ def generate_reply(email_body):
         response = client.chat.completions.create(
             model="gpt-4",
             messages=[
-                {"role": "system", "content": "You are Jenny, a helpful AI assistant. Respond naturally and professionally to customer inquiries about AI Form Reply."},
-                {"role": "user", "content": f"Please respond to this email: {email_body}"}
+                {"role": "system", "content": "You are Jenny, a helpful AI assistant. Respond naturally and professionally to inquiries about AI Form Reply. Always try to guide the conversation towards booking a meeting, but do so naturally based on their interest level. Keep responses concise and focused."},
+                {"role": "user", "content": f"Generate a friendly reply to this email that addresses their questions and encourages booking a meeting when appropriate: {email_body}"}
             ]
         )
         return response.choices[0].message.content
     except Exception as e:
         logger.error(f"Error generating reply: {e}")
-        return "Thank you for your email. I'll get back to you shortly."
+        return "Thank you for your interest. I'd be happy to schedule a call to discuss how we can help automate your lead responses."
 
 
-def reply_to_email(to_email, subject, reply_content):
-    # Send the reply via the Zoho SMTP server (or another service like SendGrid or Resend)
+def reply_to_email(to_email, original_subject, reply_content):
     import smtplib
     from email.mime.text import MIMEText
     from email.mime.multipart import MIMEMultipart
@@ -127,13 +126,16 @@ def reply_to_email(to_email, subject, reply_content):
     msg = MIMEMultipart()
     msg['From'] = EMAIL_ACCOUNT
     msg['To'] = to_email
-    msg['Subject'] = subject
+    msg['Subject'] = f"Re: {original_subject}" if original_subject else "Re: Your inquiry"
 
-    body = MIMEText(reply_content, 'plain')
+    # Always append booking link to responses
+    booking_link = knowledge_base.get("booking", "").split(":")[-1].strip()
+    full_response = f"{reply_content}\n\nWould you like to discuss this further? You can book a time that works best for you here:{booking_link}"
+    
+    body = MIMEText(full_response, 'plain')
     msg.attach(body)
 
     try:
-        # Connect to the SMTP server
         server = smtplib.SMTP('smtp.zoho.com', 587)
         server.starttls()
         server.login(EMAIL_ACCOUNT, EMAIL_PASSWORD)
