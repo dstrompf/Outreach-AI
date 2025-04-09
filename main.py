@@ -431,15 +431,15 @@ def run_campaign():
                     
                     # Test connection and refresh if needed
                     gc.list_spreadsheet_files()
-        except Exception as e:
-            logger.warning("Refreshing sheets connection...")
-            credentials = Credentials.from_service_account_file(
+                except Exception as e:
+                    logger.warning("Refreshing sheets connection...")
+                    credentials = Credentials.from_service_account_file(
                 "ai-outreach-sheets-access-24fe56ec7689.json", scopes=scopes)
             gc = gspread.authorize(credentials)
         sheet = gc.open_by_url(
-            "https://docs.google.com/spreadsheets/d/1WbdwNIdbvuCPG_Lh3-mtPCPO8ddLR5RIatcdeq29EPs/edit"
-        )
-        generated_emails_sheet = sheet.worksheet("Generated Emails")
+                        "https://docs.google.com/spreadsheets/d/1WbdwNIdbvuCPG_Lh3-mtPCPO8ddLR5RIatcdeq29EPs/edit"
+                    )
+                    generated_emails_sheet = sheet.worksheet("Generated Emails")
         
         # Get existing websites to avoid duplicates
         existing_websites = generated_emails_sheet.col_values(1)[1:]  # Skip header
