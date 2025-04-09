@@ -297,9 +297,12 @@ def run_campaign():
 
         for lead in qualified_leads[:5]:  # Process 5 at a time
             try:
-                website = lead['website']
+                website = lead.get('Website', '')  # Match the actual column name from sheets
+                if not website:
+                    logger.error("Missing website in lead data")
+                    continue
+                    
                 logger.info(f"Processing website: {website}")
-
                 scrape_resp = scrape_website(ScrapeRequest(url=website))
                 if 'error' in scrape_resp:
                     logger.error(f"Scraping failed for {website}: {scrape_resp['error']}")
