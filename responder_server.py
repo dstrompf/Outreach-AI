@@ -35,10 +35,14 @@ responder_thread.start()
 def home():
     return {"message": "Jenny AI Responder is running!", "status": "active"}
 
-
 @app.get("/health")
 def health():
-    return {"status": "healthy", "responder_thread_alive": responder_thread.is_alive()}
+    return {
+        "status": "healthy",
+        "service": "responder",
+        "port": 3001,
+        "responder_thread_alive": responder_thread.is_alive()
+    }
 
 
 if __name__ == "__main__":

@@ -15,7 +15,7 @@ run = ["python3", "main.py"]
 deploymentTarget = "cloudrun"
 
 [workflows]
-runButton = "Local Development"
+runButton = "AI Email System"
 
 [[workflows.workflow]]
 name = "Run server"
@@ -42,23 +42,11 @@ mode = "parallel"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "pkill -f uvicorn || true"
+args = "uvicorn main:app --host 0.0.0.0 --port 5000"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "sleep 2"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "python3 responder_server.py &"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "sleep 2"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "python3 main.py"
+args = "uvicorn responder_server:app --host 0.0.0.0 --port 3001"
 
 [[workflows.workflow]]
 name = "Local Development"

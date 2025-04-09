@@ -137,6 +137,14 @@ def save_generated_email(website, email_content, found_email=""):
 def home():
     return {"message": "AI Outreach System Online"}
 
+@app.get("/health")
+def health_check():
+    return {
+        "status": "healthy",
+        "service": "main",
+        "port": 5000
+    }
+
 @app.post("/generate_email")
 def generate_email(request: GenerateEmailRequest):
     try:
