@@ -131,6 +131,18 @@ def reply_to_email(to_email, subject, reply_content):
 def process_emails():
     try:
         logger.info("Starting email processing cycle")
+        logger.info(f"Using email account: {EMAIL_ACCOUNT}")
+        
+        # Verify IMAP connection
+        try:
+            mail = imaplib.IMAP4_SSL(IMAP_SERVER, IMAP_PORT)
+            mail.login(EMAIL_ACCOUNT, EMAIL_PASSWORD)
+            logger.info("✅ IMAP connection successful")
+            mail.logout()
+        except Exception as e:
+            logger.error(f"❌ IMAP connection failed: {str(e)}")
+            return
+
         emails = fetch_unread_emails()
         logger.info(f"Found {len(emails)} unread emails")
         
@@ -158,5 +170,7 @@ def process_emails():
 
 
 if __name__ == "__main__":
+    print("✨ Email responder system starting up...")
     while True:
         process_emails()
+        time.sleep(30)  # Check every 30 seconds
