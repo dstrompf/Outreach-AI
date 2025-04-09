@@ -395,7 +395,7 @@ def run_campaign():
         logger.info(f"Found {len(qualified_leads)} qualified leads")
         emails_generated = 0
 
-        # Connect to sheet once before loop
+        # Connect to sheet with refresh handling
         scopes = [
             "https://www.googleapis.com/auth/spreadsheets",
             "https://www.googleapis.com/auth/drive"
@@ -403,6 +403,15 @@ def run_campaign():
         credentials = Credentials.from_service_account_file(
             "ai-outreach-sheets-access-24fe56ec7689.json", scopes=scopes)
         gc = gspread.authorize(credentials)
+        
+        # Test connection and refresh if needed
+        try:
+            gc.list_spreadsheet_files()
+        except Exception as e:
+            logger.warning("Refreshing sheets connection...")
+            credentials = Credentials.from_service_account_file(
+                "ai-outreach-sheets-access-24fe56ec7689.json", scopes=scopes)
+            gc = gspread.authorize(credentials)
         sheet = gc.open_by_url(
             "https://docs.google.com/spreadsheets/d/1WbdwNIdbvuCPG_Lh3-mtPCPO8ddLR5RIatcdeq29EPs/edit"
         )
@@ -470,18 +479,29 @@ def run_campaign():
                     first_email = scrape_resp['emails'][0]
 
                     logger.info(f"Writing to sheet - Website: {website}, Email: {first_email}")
-                    # Use existing sheet connection
-                    generated_emails_sheet.append_row([
-                        website,
-                        generated_email,
-                        first_email,
-                        "Pending"  # Status column
-                    ])
-                    existing_websites.append(website)  # Update local cache
-                    emails_generated += 1
-                    logger.info(f"Successfully saved email for {website}")
-                    logger.info(f"Successfully saved generated email for {website}")
-                    emails_generated += 1
+                    try:
+                        # Use existing sheet connection with retry logic
+                        max_retries = 3
+                        for attempt in range(max_retries):
+                            try:
+                                generated_emails_sheet.append_row([
+                                    website,
+                                    generated_email,
+                                    first_email,
+                                    "Pending"  # Status column
+                                ])
+                                existing_websites.append(website)  # Update local cache
+                                emails_generated += 1
+                                logger.info(f"Successfully saved email for {website}")
+                                break
+                            except Exception as sheet_error:
+                                if attempt == max_retries - 1:
+                                    raise sheet_error
+                                logger.warning(f"Retrying sheet write for {website}, attempt {attempt + 1}")
+                                time.sleep(2)
+                    except Exception as e:
+                        logger.error(f"Failed to write to sheet for {website}: {str(e)}")
+                        continue
                 except Exception as e:
                     logger.error(f"Failed to save generated email for {website}: {str(e)}")
                     continue
