@@ -306,7 +306,7 @@ def run_campaign():
         logger.info(f"Found {len(qualified_leads)} qualified leads")
         emails_generated = 0
 
-        for lead in qualified_leads:
+        for lead in qualified_leads[:10]:  # Process 10 at a time to avoid rate limits
             try:
                 website = lead['website']
                 logger.info(f"Processing website: {website}")
@@ -320,9 +320,11 @@ def run_campaign():
                     logger.info(f"No emails found for {website}")
                     continue
 
+                time.sleep(1)  # Add delay between API calls
                 summarize_resp = summarize(SummarizeRequest(text=scrape_resp['text']))
                 if 'error' in summarize_resp:
                     logger.error(f"Summarization failed for {website}")
+                    time.sleep(60)  # If we hit rate limit, wait longer
                     continue
 
                 generate_resp = generate_email(
@@ -338,6 +340,11 @@ def run_campaign():
 
                 first_email = scrape_resp['emails'][0]
                 try:
+                    time.sleep(1)  # Add delay before API call
+                    generated_email = generate_resp['email']
+                    first_email = scrape_resp['emails'][0]
+                    
+                    logger.info(f"Writing to sheet - Website: {website}, Email: {first_email}")
                     scopes = [
                         "https://www.googleapis.com/auth/spreadsheets",
                         "https://www.googleapis.com/auth/drive"
@@ -351,10 +358,12 @@ def run_campaign():
                     generated_emails_sheet = sheet.worksheet("Generated Emails")
                     generated_emails_sheet.append_row([
                         website,
-                        generate_resp['email'],
+                        generated_email,
                         first_email,
                         ""  # Status column
                     ])
+                    logger.info(f"Successfully wrote to sheet for {website}")
+                    emails_generated += 1
                     logger.info(f"Successfully saved generated email for {website}")
                     emails_generated += 1
                 except Exception as e:
