@@ -131,9 +131,14 @@ def get_initial_correspondence(from_email):
 
 def generate_reply(email_body, from_email):
     try:
+        # Extract first name from email if possible
+        recipient_name = from_email.split('@')[0].split('.')[0].title() if '@' in from_email else ''
+        
         # Get context from initial correspondence
         context = get_initial_correspondence(from_email)
-        system_prompt = """You are Jenny, a helpful AI assistant for AI Form Reply. 
+        system_prompt = f"""You are Jenny, a helpful AI assistant for AI Form Reply.
+        The recipient's name is '{recipient_name}' - use it naturally in the response if available.
+        Never use 'Dear Customer' or similar generic greetings.
         Analyze the incoming email and provide a personalized, friendly response.
         Address their specific questions or concerns.
         Highlight relevant features based on their interests.
