@@ -125,10 +125,6 @@ def save_generated_email(website, email_content, found_email=""):
 def home():
     return {"message": "AI Outreach System Online"}
 
-@app.get("/favicon.ico")
-async def favicon():
-    return {"status": "ok"}
-
 @app.post("/generate_email")
 def generate_email(request: GenerateEmailRequest):
     try:
