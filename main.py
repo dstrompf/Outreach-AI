@@ -263,21 +263,27 @@ def scrape_website(request: ScrapeRequest):
 
 @app.post("/summarize")
 def summarize(request: SummarizeRequest):
-    try:
-        response = client.chat.completions.create(
-            model="gpt-4",
-            messages=[{
-                "role":
-                "system",
-                "content":
-                "Summarize the following website content in 3 sentences."
-            }, {
-                "role": "user",
-                "content": request.text
-            }])
-        return {"summary": response.choices[0].message.content}
-    except Exception as e:
-        return {"error": str(e)}
+    max_retries = 3
+    retry_delay = 2
+    
+    for attempt in range(max_retries):
+        try:
+            response = client.chat.completions.create(
+                model="gpt-4",
+                messages=[{
+                    "role": "system",
+                    "content": "Summarize the following website content in 3 sentences."
+                }, {
+                    "role": "user",
+                    "content": request.text
+                }])
+            return {"summary": response.choices[0].message.content}
+        except Exception as e:
+            if "429" in str(e) and attempt < max_retries - 1:
+                time.sleep(retry_delay * (attempt + 1))  # Exponential backoff
+                continue
+            return {"error": str(e)}
+    return {"error": "Max retries exceeded"}
 
 
 @app.post("/generate_email")
@@ -319,7 +325,7 @@ def run_campaign():
         logger.info(f"Found {len(qualified_leads)} qualified leads")
         emails_generated = 0
 
-        for lead in qualified_leads[:10]:  # Process 10 at a time to avoid rate limits
+        for lead in qualified_leads[:3]:  # Process 3 at a time to avoid rate limits
             try:
                 website = lead['website']
                 logger.info(f"Processing website: {website}")
