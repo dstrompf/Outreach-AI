@@ -152,12 +152,12 @@ def health_check():
         "port": 5000
     }
 
-@app.post("/generate_email")
 # Simple cache for email responses
 email_cache = {}
 last_api_call = 0
 MIN_TIME_BETWEEN_CALLS = 1  # seconds
 
+@app.post("/generate_email")
 def generate_email(request: GenerateEmailRequest):
     try:
         # Cost tracking
