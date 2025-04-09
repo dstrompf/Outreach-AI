@@ -1,4 +1,5 @@
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import requests
 from bs4 import BeautifulSoup
@@ -15,6 +16,16 @@ import resend
 # ----- SETUP -----
 load_dotenv()
 app = FastAPI()
+
+# Configure CORS
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 resend.api_key = os.getenv("RESEND_API_KEY")
 
