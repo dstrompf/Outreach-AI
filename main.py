@@ -298,7 +298,7 @@ Based on this business summary: {request.summary}"""
         return {"error": str(e)}
 
 
-@app.get("/run_campaign")
+@app.get("/run-campaign")
 def run_campaign():
     try:
         logger.info("Starting campaign...")
