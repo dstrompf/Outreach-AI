@@ -306,7 +306,8 @@ def run_campaign():
         # Process all leads but check for duplicates
         logger.info(f"Processing all {len(qualified_leads)} leads")
         
-        worksheet = connect_to_sheet()
+        sheet = connect_to_sheet()
+        worksheet = sheet.worksheet("Generated Emails")
         processed_websites = set(worksheet.col_values(1)[1:])  # Skip header
         logger.info(f"Found {len(processed_websites)} already processed websites")
 
