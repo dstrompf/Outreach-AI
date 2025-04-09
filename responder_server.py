@@ -5,11 +5,14 @@ import threading
 import time
 import logging
 
+
 # Set up logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+
 app = FastAPI()
+
 
 def run_responder_loop():
     while True:
@@ -23,17 +26,21 @@ def run_responder_loop():
         logger.info("Waiting 5 minutes before next check...")
         time.sleep(300)  # Wait 5 minutes before checking again
 
+
 # Start the responder loop in the background
 responder_thread = threading.Thread(target=run_responder_loop, daemon=True)
 responder_thread.start()
+
 
 @app.get("/")
 def home():
     return {"message": "Jenny AI Responder is running!", "status": "active"}
 
+
 @app.get("/health")
 def health():
     return {"status": "healthy", "responder_thread_alive": responder_thread.is_alive()}
+
 
 if __name__ == "__main__":
     import uvicorn

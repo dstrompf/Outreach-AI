@@ -4,8 +4,10 @@ import time
 import logging
 from google.oauth2.service_account import Credentials
 
+
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
 
 def test_sheets_connection():
     try:
@@ -17,6 +19,7 @@ def test_sheets_connection():
     except Exception as e:
         logger.error(f"❌ Failed to connect to Google Sheets: {e}")
         return False
+
 
 def connect_to_sheet():
     scopes = [
@@ -34,6 +37,7 @@ def connect_to_sheet():
         "https://docs.google.com/spreadsheets/d/1WbdwNIdbvuCPG_Lh3-mtPCPO8ddLR5RIatcdeq29EPs/edit#gid=0"
     )
     return sheet
+
 
 def get_qualified_leads():
     try:
