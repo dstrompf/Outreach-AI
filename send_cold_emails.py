@@ -111,34 +111,30 @@ def run_cold_email_campaign():
     for lead in leads_to_send:
         website = lead.get('Website')
         email_content = lead.get('Email Content')
+        to_email = lead.get('Found Email')
 
-        if not website or not email_content:
+        if not all([website, email_content, to_email]):
+            print(f"❌ Missing data for {website}")
             continue
 
-        to_email = f"info@{website.replace('https://', '').replace('www.', '').split('/')[0]}"
         subject = random.choice(SUBJECT_LINES)
-
         send_cold_email(to_email, subject, email_content)
 
         try:
-            # Find the website row
             cell = worksheet.find(website)
             if cell:
-                # Update Status column (4th column) to "Sent"
                 worksheet.update_cell(cell.row, 4, "Sent")
                 print(f"✅ Marked {website} as sent in row {cell.row}")
                 
-                # Verify the update
                 updated_value = worksheet.cell(cell.row, 4).value
                 if updated_value != "Sent":
                     print(f"⚠️ Update verification failed for {website}")
-                    
             else:
                 print(f"❌ Could not find row for website: {website}")
                 
         except Exception as e:
             print(f"❌ Failed to mark {website} as sent: {str(e)}")
-            time.sleep(2)  # Back off on API error
+            time.sleep(2)
 
         time.sleep(random.randint(30, 90))
 
