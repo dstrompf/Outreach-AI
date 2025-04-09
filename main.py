@@ -391,9 +391,16 @@ Based on this business summary: {request.summary}"""
 @app.get("/run-campaign")
 def run_campaign():
     try:
+        # Add delay between API calls
+        time.sleep(2)
+        
         qualified_leads = get_qualified_leads()
         logger.info(f"Found {len(qualified_leads)} qualified leads")
         emails_generated = 0
+        
+        # Process fewer leads at a time
+        batch_size = 3
+        current_batch = qualified_leads[:batch_size]
 
         # Connect to sheet with refresh handling
         scopes = [
