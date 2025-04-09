@@ -340,10 +340,18 @@ def run_campaign():
                     continue
 
                 time.sleep(1)  # Add delay between API calls
-                summarize_resp = summarize(SummarizeRequest(text=scrape_resp['text']))
+                # Add exponential backoff for OpenAI API
+                max_retries = 3
+                for retry in range(max_retries):
+                    summarize_resp = summarize(SummarizeRequest(text=scrape_resp['text']))
+                    if 'error' not in summarize_resp:
+                        break
+                    if retry < max_retries - 1:
+                        wait_time = (2 ** retry) * 30  # Exponential backoff: 30s, 60s, 120s
+                        logger.info(f"Rate limited, waiting {wait_time} seconds before retry {retry + 1}")
+                        time.sleep(wait_time)
                 if 'error' in summarize_resp:
-                    logger.error(f"Summarization failed for {website}")
-                    time.sleep(60)  # If we hit rate limit, wait longer
+                    logger.error(f"Summarization failed for {website} after {max_retries} retries")
                     continue
 
                 generate_resp = generate_email(
@@ -381,8 +389,6 @@ def run_campaign():
                         first_email,
                         ""  # Status column
                     ])
-                    logger.info(f"Successfully wrote to sheet for {website}")
-                    emails_generated += 1
                     logger.info(f"Successfully saved generated email for {website}")
                     emails_generated += 1
                 except Exception as e:
