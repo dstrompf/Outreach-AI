@@ -198,19 +198,25 @@ def system_health():
 @app.get("/test_leads")
 def test_leads():
     try:
+        logger.info("Starting test_leads endpoint check")
         qualified = get_qualified_leads()
         if not qualified:
+            logger.warning("No qualified leads found")
             return {"status": "No qualified leads found", "qualified_leads": []}
         
-        # Count total and Google Workspace leads
         total_leads = len(qualified)
         workspace_leads = sum(1 for lead in qualified if lead.get('has_workspace'))
         
+        # Log the first 3 leads for verification
+        for idx, lead in enumerate(qualified[:3]):
+            logger.info(f"Sample lead {idx + 1}: Website={lead.get('website')}, Has Workspace={lead.get('has_workspace')}")
+        
+        logger.info(f"Total leads: {total_leads}, Workspace leads: {workspace_leads}")
         return {
-            "status": "success",
+            "status": "success", 
             "total_leads": total_leads,
             "workspace_leads": workspace_leads,
-            "sample_leads": qualified[:3]  # Show first 3 leads for verification
+            "sample_leads": qualified[:3]
         }
     except Exception as e:
         logger.error(f"Error in test_leads endpoint: {str(e)}")
