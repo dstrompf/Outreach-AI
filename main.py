@@ -234,8 +234,20 @@ def scrape_website(request: ScrapeRequest):
 
         # Get main page
         response = requests.get(request.url, headers=headers, timeout=10)
-        soup = BeautifulSoup(response.text, "html.parser")
-        collected_text += " ".join([tag.get_text() for tag in soup.find_all(["h1", "h2", "p"])])
+        response.raise_for_status()  # Raise an exception for bad status codes
+        
+        # Store the entire HTML content
+        html_content = response.text
+        
+        # Use regex to find email patterns in the entire HTML
+        import re
+        email_pattern = r'[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}'
+        found_emails = re.findall(email_pattern, html_content)
+        collected_emails.update(found_emails)
+        
+        # Parse with BeautifulSoup
+        soup = BeautifulSoup(html_content, "html.parser")
+        collected_text += " ".join([tag.get_text() for tag in soup.find_all(["h1", "h2", "p", "div", "span", "a"])])
 
         # Find emails on main page
         for a in soup.find_all('a', href=True):
@@ -244,11 +256,23 @@ def scrape_website(request: ScrapeRequest):
                 if '@' in email and '.' in email:
                     collected_emails.add(email)
 
+        # Look for contact form fields that might contain email information
+        contact_inputs = soup.find_all('input', {'type': ['email', 'text']})
+        for input_field in contact_inputs:
+            placeholder = input_field.get('placeholder', '').lower()
+            name = input_field.get('name', '').lower()
+            if 'email' in placeholder or 'email' in name:
+                parent_div = input_field.find_parent('div')
+                if parent_div:
+                    text_content = parent_div.get_text()
+                    email_matches = re.findall(email_pattern, text_content)
+                    collected_emails.update(email_matches)
+
         # Check contact and about pages
         contact_links = []
         for a in soup.find_all('a', href=True):
             href = a['href'].lower()
-            if any(x in href for x in ['contact', 'about', 'team']):
+            if any(x in href for x in ['contact', 'about', 'team', 'locations']):
                 if href.startswith('/'):
                     href = request.url.rstrip('/') + '/' + href.lstrip('/')
                 elif not href.startswith('http'):
