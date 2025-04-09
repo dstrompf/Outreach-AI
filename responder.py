@@ -58,7 +58,7 @@ def connect_to_sheet():
         credentials = Credentials.from_service_account_file(
             "ai-outreach-sheets-access-24fe56ec7689.json", scopes=scopes)
         client = gspread.authorize(credentials)
-        
+
         # Test connection and refresh if needed
         try:
             client.list_spreadsheet_files()
@@ -67,7 +67,7 @@ def connect_to_sheet():
             credentials = Credentials.from_service_account_file(
                 "ai-outreach-sheets-access-24fe56ec7689.json", scopes=scopes)
             client = gspread.authorize(credentials)
-            
+
         sheet = client.open_by_url(
             "https://docs.google.com/spreadsheets/d/1WbdwNIdbvuCPG_Lh3-mtPCPO8ddLR5RIatcdeq29EPs/edit"
         )
@@ -164,16 +164,16 @@ def check_inbox():
 
         # Search for unread messages
         _, messages = mail.search(None, 'UNSEEN')
-        
+
         for num in messages[0].split():
             _, msg = mail.fetch(num, '(RFC822)')
             email_body = msg[0][1]
             email_message = email.message_from_bytes(email_body)
-            
+
             # Get sender
             from_addr = email.utils.parseaddr(email_message['From'])[1]
             subject = email_message['Subject']
-            
+
             # Generate response using AI
             response = client.chat.completions.create(
                 model="gpt-4",
@@ -185,19 +185,19 @@ def check_inbox():
                     "content": f"Respond to this email subject: {subject}"
                 }]
             )
-            
+
             # Send response
             send_email(
                 from_addr,
                 f"Re: {subject}",
                 response.choices[0].message.content
             )
-            
+
             logger.info(f"Responded to email from {from_addr}")
-            
+
         mail.close()
         mail.logout()
-        
+
     except Exception as e:
         logger.error(f"Error checking inbox: {str(e)}")
 
@@ -206,7 +206,7 @@ def process_emails():
     try:
         # Check inbox first
         check_inbox()
-        
+
         # Then process outgoing emails
         sheet = connect_to_sheet()
         worksheet = sheet.worksheet("Generated Emails")

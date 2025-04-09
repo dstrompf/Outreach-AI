@@ -101,20 +101,20 @@ def scrape_website(request: ScrapeRequest):
         return {"error": str(e)}
 
 def save_generated_email(website, email_content, found_email=""):
-    max_retries = 3
-    retry_delay = 2  # seconds
+        max_retries = 3
+        retry_delay = 2  # seconds
 
-    for attempt in range(max_retries):
-        try:
-            SERVICE_ACCOUNT_FILE = os.getenv("GOOGLE_SERVICE_ACCOUNT_FILE", "ai-outreach-sheets-access-24fe56ec7689.json")
-            SPREADSHEET_URL = os.getenv("SPREADSHEET_URL", "https://docs.google.com/spreadsheets/d/1WbdwNIdbvuCPG_Lh3-mtPCPO8ddLR5RIatcdeq29EPs/edit")
-            logger.info(f"Attempt {attempt + 1} to save email for {website}")
+        for attempt in range(max_retries):
+            try:
+                SERVICE_ACCOUNT_FILE = os.getenv("GOOGLE_SERVICE_ACCOUNT_FILE", "ai-outreach-sheets-access-24fe56ec7689.json")
+                SPREADSHEET_URL = os.getenv("SPREADSHEET_URL", "https://docs.google.com/spreadsheets/d/1WbdwNIdbvuCPG_Lh3-mtPCPO8ddLR5RIatcdeq29EPs/edit")
+                logger.info(f"Attempt {attempt + 1} to save email for {website}")
 
-            scopes = [
-                "https://www.googleapis.com/auth/spreadsheets",
-                "https://www.googleapis.com/auth/drive"
-            ]
-            credentials = Credentials.from_service_account_file(SERVICE_ACCOUNT_FILE, scopes=scopes)
+                scopes = [
+                    "https://www.googleapis.com/auth/spreadsheets",
+                    "https://www.googleapis.com/auth/drive"
+                ]
+                credentials = Credentials.from_service_account_file(SERVICE_ACCOUNT_FILE, scopes=scopes)
             client = gspread.authorize(credentials)
             sheet = client.open_by_url(
                 "https://docs.google.com/spreadsheets/d/1WbdwNIdbvuCPG_Lh3-mtPCPO8ddLR5RIatcdeq29EPs/edit"

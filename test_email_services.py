@@ -40,7 +40,7 @@ def test_zoho():
         server.quit()
         print("✅ Zoho test email sent successfully")
     except Exception as e:
-        print(f"❌ Zoho test failed: {str(e)}")
+        print(f"❌ Zoho test failed: {str(e)}")tr(e)}")
 
 def test_openai():
     try:

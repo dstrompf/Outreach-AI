@@ -1,4 +1,3 @@
-
 import os
 from resend import Resend
 
