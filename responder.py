@@ -85,11 +85,16 @@ def fetch_unread_emails():
                 else:
                     body = msg.get_payload(decode=True).decode()
 
+                message_id = msg.get('Message-ID', '')
+                references = msg.get('References', '')
+                
                 emails.append({
                     "subject": subject,
                     "from_email": from_email,
                     "body": body,
-                    "num": num
+                    "num": num,
+                    "message_id": message_id,
+                    "references": references
                 })
                 logger.info(f"Processed email from: {from_email}")
             except Exception as e:
@@ -118,16 +123,22 @@ def generate_reply(email_body):
         return "Thank you for your interest. I'd be happy to schedule a call to discuss how we can help automate your lead responses."
 
 
-def reply_to_email(to_email, original_subject, reply_content):
+def reply_to_email(to_email, original_subject, reply_content, message_id=None, references=None):
     import smtplib
     from email.mime.text import MIMEText
     from email.mime.multipart import MIMEMultipart
+    from email.utils import make_msgid
 
     msg = MIMEMultipart()
     msg['From'] = EMAIL_ACCOUNT
     msg['To'] = to_email
-    msg['Subject'] = f"Re: {original_subject}" if original_subject else "Re: Your inquiry"
-
+    msg['Subject'] = f"Re: {original_subject.replace('Re: ', '')}" if original_subject else "Re: Your inquiry"
+    
+    # Set proper threading headers
+    if message_id:
+        msg['In-Reply-To'] = message_id
+        msg['References'] = message_id if not references else f"{references} {message_id}"
+    
     # Always append booking link to responses
     booking_link = knowledge_base.get("booking", "").split(":")[-1].strip()
     full_response = f"{reply_content}\n\nWould you like to discuss this further? You can book a time that works best for you here:{booking_link}"
@@ -202,7 +213,13 @@ def process_emails():
                 # Generate a reply based on the email content
                 reply_content = generate_reply(email['body'])
                 if reply_content:
-                    reply_to_email(email['from_email'], email['subject'], reply_content)
+                    reply_to_email(
+                        email['from_email'], 
+                        email['subject'], 
+                        reply_content,
+                        email['message_id'],
+                        email['references']
+                    )
                     logger.info(f"✅ Reply sent to {email['from_email']}")
                     
                     # Wait for 2-3 minutes before processing next email
