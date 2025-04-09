@@ -32,7 +32,8 @@ app.add_middleware(
 )
 
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
-resend.api_key = os.getenv("RESEND_API_KEY")
+# Assuming resend is defined elsewhere, this line remains unchanged.
+#resend.api_key = os.getenv("RESEND_API_KEY")
 
 # ----- MODELS -----
 class ScrapeRequest(BaseModel):
@@ -102,7 +103,7 @@ def save_generated_email(website, email_content, found_email=""):
     try:
         SERVICE_ACCOUNT_FILE = os.getenv("GOOGLE_SERVICE_ACCOUNT_FILE", "ai-outreach-sheets-access-24fe56ec7689.json")
         SPREADSHEET_URL = os.getenv("SPREADSHEET_URL", "https://docs.google.com/spreadsheets/d/1WbdwNIdbvuCPG_Lh3-mtPCPO8ddLR5RIatcdeq29EPs/edit")
-        
+
         scopes = [
             "https://www.googleapis.com/auth/spreadsheets",
             "https://www.googleapis.com/auth/drive"
@@ -150,7 +151,7 @@ def generate_email(request: GenerateEmailRequest):
     try:
         with open('knowledge_base.txt', 'r') as f:
             knowledge_base = f.read()
-            
+
         prompt = f"""You are Jenny, an AI outreach specialist for AI Form Reply.
 
 Context from their website: {request.summary}
@@ -171,7 +172,8 @@ Note: This email address was found publicly on your website. To unsubscribe and 
 
 Best regards,
 Jenny from AI Form Reply
-info@aiformreply.com"""
+info@aiformreply.com
+You can book a quick demo here: https://calendar.google.com/calendar/u/0/appointments/schedules/AcZssZ36P0ABwQ5qKYkBrQ302KCunFUEoe23GadJe8JFnQnApuoDbID8QD26WJio1oDY5TqrEV2QfIQq"""
 
         response = client.chat.completions.create(
             model="gpt-4",
@@ -238,7 +240,7 @@ def run_campaign():
 if __name__ == "__main__":
     import os
     import uvicorn
-    
+
     port = int(os.environ.get("PORT", 5000))
     uvicorn.run(
         "main:app",

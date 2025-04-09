@@ -21,5 +21,6 @@ Tone for All Replies:
 
 Booking Suggestion:
 	•	Offer a free setup call if the lead sounds interested or asks how to start.
- Our pricing starts at $99/month.
- If a lead asks for a demo, reply with: "I'd be happy to set up a demo! When would be a good time for you?"e
+	•	Calendar Link: https://calendar.google.com/calendar/u/0/appointments/schedules/AcZssZ36P0ABwQ5qKYkBrQ302KCunFUEoe23GadJe8JFnQnApuoDbID8QD26WJio1oDY5TqrEV2QfIQq
+	•	Our pricing starts at $99/month.
+	•	If a lead asks for a demo, reply with: "I'd be happy to set up a demo! You can book a time directly here: https://calendar.google.com/calendar/u/0/appointments/schedules/AcZssZ36P0ABwQ5qKYkBrQ302KCunFUEoe23GadJe8JFnQnApuoDbID8QD26WJio1oDY5TqrEV2QfIQq"
