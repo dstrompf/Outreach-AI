@@ -108,13 +108,43 @@ def fetch_unread_emails():
         return []
 
 
-def generate_reply(email_body):
+def get_initial_correspondence(from_email):
     try:
+        scopes = ["https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive"]
+        credentials = Credentials.from_service_account_file("ai-outreach-sheets-access-24fe56ec7689.json", scopes=scopes)
+        client = gspread.authorize(credentials)
+        sheet = client.open_by_url("https://docs.google.com/spreadsheets/d/1WbdwNIdbvuCPG_Lh3-mtPCPO8ddLR5RIatcdeq29EPs/edit")
+        worksheet = sheet.worksheet("Generated Emails")
+        
+        # Find the row with matching email
+        cell = worksheet.find(from_email)
+        if cell:
+            row = worksheet.row_values(cell.row)
+            return {
+                'website': row[0],
+                'initial_email': row[1],
+                'business_summary': row[2] if len(row) > 2 else ''
+            }
+    except Exception as e:
+        logger.error(f"Error getting initial correspondence: {e}")
+    return None
+
+def generate_reply(email_body, from_email):
+    try:
+        # Get context from initial correspondence
+        context = get_initial_correspondence(from_email)
+        system_prompt = """You are Jenny, a helpful AI assistant. Respond naturally and professionally to inquiries about AI Form Reply. 
+        Always try to guide the conversation towards booking a meeting, but do so naturally based on their interest level. 
+        Keep responses concise and focused."""
+        
+        if context:
+            system_prompt += f"\n\nContext about this business:\nWebsite: {context['website']}\nBusiness Summary: {context['business_summary']}\nInitial Outreach: {context['initial_email']}"
+        
         response = client.chat.completions.create(
             model="gpt-4",
             messages=[
-                {"role": "system", "content": "You are Jenny, a helpful AI assistant. Respond naturally and professionally to inquiries about AI Form Reply. Always try to guide the conversation towards booking a meeting, but do so naturally based on their interest level. Keep responses concise and focused."},
-                {"role": "user", "content": f"Generate a friendly reply to this email that addresses their questions and encourages booking a meeting when appropriate: {email_body}"}
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": f"Generate a friendly reply to this email that addresses their questions, references their business context when relevant, and encourages booking a meeting when appropriate: {email_body}"}
             ]
         )
         return response.choices[0].message.content
@@ -211,7 +241,7 @@ def process_emails():
                     continue
                 
                 # Generate a reply based on the email content
-                reply_content = generate_reply(email['body'])
+                reply_content = generate_reply(email['body'], email['from_email'])
                 if reply_content:
                     reply_to_email(
                         email['from_email'], 
