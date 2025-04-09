@@ -181,16 +181,25 @@ Jenny from AI Form Reply
 info@aiformreply.com
 You can book a quick demo here: https://calendar.google.com/calendar/u/0/appointments/schedules/AcZssZ36P0ABwQ5qKYkBrQ302KCunFUEoe23GadJe8JFnQnApuoDbID8QD26WJio1oDY5TqrEV2QfIQq"""
 
-        response = client.chat.completions.create(
-            model="gpt-4",
-            messages=[{
-                "role": "system",
-                "content": "You are Jenny, a friendly outreach specialist focused on helping businesses automate their lead responses."
-            }, {
-                "role": "user",
-                "content": prompt
-            }])
-        return {"email": response.choices[0].message.content}
+        try:
+            response = client.chat.completions.create(
+                model="gpt-4",
+                messages=[{
+                    "role": "system",
+                    "content": "You are Jenny, a friendly outreach specialist focused on helping businesses automate their lead responses."
+                }, {
+                    "role": "user",
+                    "content": prompt
+                }])
+            return {"email": response.choices[0].message.content}
+        except Exception as e:
+            if "insufficient_quota" in str(e):
+                logger.error("OpenAI API quota exceeded - please check billing")
+                return {"error": "OpenAI API quota exceeded - please check billing at platform.openai.com/account/billing"}
+            elif "rate_limit" in str(e):
+                time.sleep(20)  # Wait before retry
+                return {"error": "Rate limit hit, please try again in a few minutes"}
+            return {"error": str(e)}
     except Exception as e:
         return {"error": str(e)}
 
