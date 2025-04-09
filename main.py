@@ -265,7 +265,7 @@ def scrape_website(request: ScrapeRequest):
 def summarize(request: SummarizeRequest):
     max_retries = 3
     retry_delay = 2
-    
+
     for attempt in range(max_retries):
         try:
             response = client.chat.completions.create(
@@ -320,12 +320,11 @@ Based on this business summary: {request.summary}"""
 @app.get("/run-campaign")
 def run_campaign():
     try:
-        logger.info("Starting campaign...")
         qualified_leads = get_qualified_leads()
         logger.info(f"Found {len(qualified_leads)} qualified leads")
         emails_generated = 0
 
-        for lead in qualified_leads[:3]:  # Process 3 at a time to avoid rate limits
+        for lead in qualified_leads[:2]:  # Process 2 at a time to avoid rate limits
             try:
                 website = lead['website']
                 logger.info(f"Processing website: {website}")
@@ -339,20 +338,27 @@ def run_campaign():
                     logger.info(f"No emails found for {website}")
                     continue
 
-                time.sleep(1)  # Add delay between API calls
-                # Add exponential backoff for OpenAI API
-                max_retries = 3
+                time.sleep(2)  # Longer delay between API calls
+
+                # More conservative retry logic
+                max_retries = 2
+                last_error = None
                 for retry in range(max_retries):
-                    summarize_resp = summarize(SummarizeRequest(text=scrape_resp['text']))
-                    if 'error' not in summarize_resp:
-                        break
-                    if retry < max_retries - 1:
-                        wait_time = (2 ** retry) * 30  # Exponential backoff: 30s, 60s, 120s
+                    try:
+                        summarize_resp = summarize(SummarizeRequest(text=scrape_resp['text']))
+                        if 'error' not in summarize_resp:
+                            break
+                        last_error = summarize_resp.get('error')
+                        wait_time = (2 ** retry) * 60  # Longer waits: 60s, 120s
                         logger.info(f"Rate limited, waiting {wait_time} seconds before retry {retry + 1}")
                         time.sleep(wait_time)
-                if 'error' in summarize_resp:
-                    logger.error(f"Summarization failed for {website} after {max_retries} retries")
-                    continue
+                    except Exception as e:
+                        last_error = str(e)
+                        logger.error(f"Error during summarization: {str(e)}")
+                        time.sleep(60)
+
+                if 'error' in summarize_resp or last_error:
+                    return {"status": "Rate limited", "message": "OpenAI API rate limit reached. Please try again in a few minutes."}
 
                 generate_resp = generate_email(
                     GenerateEmailRequest(
