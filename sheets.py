@@ -1,7 +1,12 @@
 
 import gspread
 import time
+import logging
 from google.oauth2.service_account import Credentials
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 def test_sheets_connection():
     try:
