@@ -143,6 +143,29 @@ def reply_to_email(to_email, subject, reply_content):
         print(f"❌ Failed to reply to {to_email}: {str(e)}")
 
 
+def is_system_email(subject, from_email, body):
+    system_indicators = [
+        "set up your zoho mail",
+        "getting started",
+        "welcome to zoho",
+        "account setup",
+        "verification",
+        "noreply@zoho.com",
+        "no-reply@zoho.com"
+    ]
+    
+    # Check subject and sender
+    subject_lower = subject.lower() if subject else ""
+    from_lower = from_email.lower() if from_email else ""
+    body_lower = body.lower() if body else ""
+    
+    # Return True if it's a system email
+    return any(indicator in subject_lower for indicator in system_indicators) or \
+           any(indicator in body_lower for indicator in system_indicators) or \
+           "zohomail" in from_lower or \
+           "noreply" in from_lower or \
+           "no-reply" in from_lower
+
 def process_emails():
     try:
         logger.info("Starting email processing cycle")
@@ -164,6 +187,11 @@ def process_emails():
         for email in emails:
             try:
                 logger.info(f"📥 Processing email from {email['from_email']} with subject {email['subject']}")
+                
+                # Skip system emails
+                if is_system_email(email['subject'], email['from_email'], email['body']):
+                    logger.info("Skipping system email")
+                    continue
                 
                 # Generate a reply based on the email content
                 reply_content = generate_reply(email['body'])
