@@ -152,7 +152,7 @@ def health_check():
         "port": 5000
     }
 
-# Simple cache for email responses
+# Global variables for caching and rate limiting
 email_cache = {}
 last_api_call = 0
 MIN_TIME_BETWEEN_CALLS = 1  # seconds
