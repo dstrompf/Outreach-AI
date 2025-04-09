@@ -189,18 +189,23 @@ You can book a quick demo here: https://calendar.google.com/calendar/u/0/appoint
         return {"error": str(e)}
 
 def generate_email_with_retry(request: GenerateEmailRequest, max_retries=3):
+    RETRYABLE_ERRORS = {'429', '500', '502', '503'}  # Common temporary errors
     for attempt in range(max_retries):
         try:
             response = generate_email(request)
-            time.sleep(1)  # Small delay to avoid hitting limits again
+            time.sleep(1)  # Small delay between successful calls
             return response
         except Exception as e:
-            if ("429" in str(e) or "rate_limit" in str(e).lower()) and attempt < max_retries - 1:
-                wait_time = 2 ** attempt  # Exponential backoff: 2s, 4s, 8s
-                logger.info(f"Rate limited by OpenAI. Waiting {wait_time} seconds before retry #{attempt + 2}...")
+            error_str = str(e).lower()
+            is_retryable = any(code in error_str for code in RETRYABLE_ERRORS) or 'rate_limit' in error_str
+            
+            if is_retryable and attempt < max_retries - 1:
+                wait_time = min(2 ** attempt, 8)  # Exponential backoff: 2s, 4s, 8s max
+                logger.warning(f"Temporary error: {str(e)}. Retry {attempt + 1}/{max_retries} in {wait_time}s")
                 time.sleep(wait_time)
                 continue
-            logger.error(f"Error generating email: {str(e)}")
+            
+            logger.error(f"Non-retryable error or max retries exceeded: {str(e)}")
             return {"error": str(e)}
     return {"error": "Max retries exceeded. Email generation failed."}
 
