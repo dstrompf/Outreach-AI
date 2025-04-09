@@ -188,6 +188,21 @@ You can book a quick demo here: https://calendar.google.com/calendar/u/0/appoint
     except Exception as e:
         return {"error": str(e)}
 
+def generate_email_with_retry(request: GenerateEmailRequest, max_retries=3, base_delay=2):
+    for attempt in range(max_retries):
+        try:
+            response = generate_email(request)
+            time.sleep(base_delay)  # Basic rate limiting
+            return response
+        except Exception as e:
+            if "429" in str(e) and attempt < max_retries - 1:
+                retry_delay = base_delay * (2 ** attempt)  # Exponential backoff
+                logger.info(f"Rate limited, waiting {retry_delay} seconds before retry")
+                time.sleep(retry_delay)
+                continue
+            raise e
+    return {"error": "Max retries exceeded"}
+
 @app.get("/run-campaign")
 @app.get("/run_campaign")  # Support both formats
 def run_campaign():
@@ -211,7 +226,7 @@ def run_campaign():
                     continue
 
                 summary = "Business using Google Workspace that could benefit from AI form automation"
-                generate_resp = generate_email(
+                generate_resp = generate_email_with_retry(
                     GenerateEmailRequest(
                         business_name=lead.get('business_name', website),
                         summary=summary
