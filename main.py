@@ -303,19 +303,25 @@ def run_campaign():
         logger.info(f"Found {len(qualified_leads)} qualified leads")
         emails_generated = 0
 
-        # Process only 3 leads at a time to avoid rate limits
-        batch_size = 3
-        current_batch = qualified_leads[:batch_size]
-        logger.info(f"Processing batch of {len(current_batch)} leads")
+        # Process all leads but check for duplicates
+        logger.info(f"Processing all {len(qualified_leads)} leads")
+        
+        worksheet = connect_to_sheet()
+        processed_websites = set(worksheet.col_values(1)[1:])  # Skip header
+        logger.info(f"Found {len(processed_websites)} already processed websites")
 
-        for lead in qualified_leads[:5]:  # Process 5 at a time
+        for lead in qualified_leads:
             try:
                 website = lead.get('Website', '')  # Match the actual column name from sheets
                 if not website:
                     logger.error("Missing website in lead data")
                     continue
+
+                if website in processed_websites:
+                    logger.info(f"Skipping already processed website: {website}")
+                    continue
                     
-                logger.info(f"Processing website: {website}")
+                logger.info(f"Processing new website: {website}")
                 scrape_resp = scrape_website(ScrapeRequest(url=website))
                 if 'error' in scrape_resp:
                     logger.error(f"Scraping failed for {website}: {scrape_resp['error']}")
