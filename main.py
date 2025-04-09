@@ -440,6 +440,13 @@ def run_campaign():
                     
                     # Test connection and refresh if needed
                     gc.list_spreadsheet_files()
+                    sheet = gc.open_by_url(
+                        "https://docs.google.com/spreadsheets/d/1WbdwNIdbvuCPG_Lh3-mtPCPO8ddLR5RIatcdeq29EPs/edit"
+                    )
+                    generated_emails_sheet = sheet.worksheet("Generated Emails")
+                    
+                    # Get existing websites to avoid duplicates
+                    existing_websites = generated_emails_sheet.col_values(1)[1:]  # Skip header
                 except Exception as e:
                     logger.warning("Refreshing sheets connection...")
                     credentials = Credentials.from_service_account_file(
@@ -449,9 +456,7 @@ def run_campaign():
                         "https://docs.google.com/spreadsheets/d/1WbdwNIdbvuCPG_Lh3-mtPCPO8ddLR5RIatcdeq29EPs/edit"
                     )
                     generated_emails_sheet = sheet.worksheet("Generated Emails")
-        
-        # Get existing websites to avoid duplicates
-        existing_websites = generated_emails_sheet.col_values(1)[1:]  # Skip header
+                    existing_websites = generated_emails_sheet.col_values(1)[1:]  # Skip header
         logger.info(f"Found {len(existing_websites)} existing processed websites")
 
         for lead in qualified_leads[:5]:  # Process 5 at a time
