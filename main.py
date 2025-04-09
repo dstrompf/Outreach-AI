@@ -160,11 +160,19 @@ MIN_TIME_BETWEEN_CALLS = 1  # seconds
 
 def generate_email(request: GenerateEmailRequest):
     try:
-        # Check cache first
-        cache_key = f"{request.business_name}:{request.summary}"
-        if cache_key in email_cache:
-            logger.info("Using cached response")
-            return {"email": email_cache[cache_key]}
+        # Cost tracking
+        logger.info(f"OpenAI API call for {request.business_name}")
+        
+        # Check cache with fuzzy matching
+        for cached_key in email_cache:
+            if request.business_name.lower() in cached_key.lower():
+                logger.info("Using similar business cached response")
+                return {"email": email_cache[cached_key]}
+            
+        # Token optimization
+        prompt = f"""Business: {request.business_name}
+Summary: {request.summary[:500]}  # Limit summary length
+Task: Write a short cold email."""
 
         # Rate limiting
         global last_api_call
