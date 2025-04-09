@@ -318,8 +318,9 @@ scheduler.start()
 @app.get("/test_email_scraping")
 def test_email_scraping():
     test_websites = [
-        "https://www.python.org",
-        "https://www.github.com"
+        "https://example.com",
+        "https://demo-site.netlify.app",
+        "https://replit.com/site/contact"
     ]
     results = []
     
