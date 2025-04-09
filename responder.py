@@ -146,9 +146,59 @@ def process_website(website_url, business_name=""):
     save_found_email(website_url, email)
     return email
 
+def check_inbox():
+    try:
+        # Connect to IMAP server
+        mail = imaplib.IMAP4_SSL(IMAP_SERVER, IMAP_PORT)
+        mail.login(EMAIL_ACCOUNT, EMAIL_PASSWORD)
+        mail.select('INBOX')
+
+        # Search for unread messages
+        _, messages = mail.search(None, 'UNSEEN')
+        
+        for num in messages[0].split():
+            _, msg = mail.fetch(num, '(RFC822)')
+            email_body = msg[0][1]
+            email_message = email.message_from_bytes(email_body)
+            
+            # Get sender
+            from_addr = email.utils.parseaddr(email_message['From'])[1]
+            subject = email_message['Subject']
+            
+            # Generate response using AI
+            response = client.chat.completions.create(
+                model="gpt-4",
+                messages=[{
+                    "role": "system",
+                    "content": "You are Jenny, a friendly AI assistant. Respond professionally to emails."
+                }, {
+                    "role": "user",
+                    "content": f"Respond to this email subject: {subject}"
+                }]
+            )
+            
+            # Send response
+            send_email(
+                from_addr,
+                f"Re: {subject}",
+                response.choices[0].message.content
+            )
+            
+            logger.info(f"Responded to email from {from_addr}")
+            
+        mail.close()
+        mail.logout()
+        
+    except Exception as e:
+        logger.error(f"Error checking inbox: {str(e)}")
+
 def process_emails():
     logger.info("Starting email processing cycle")
     try:
+        # Check inbox first
+        check_inbox()
+        
+        # Then process outgoing emails
         sheet = connect_to_sheet()
         worksheet = sheet.worksheet("Generated Emails")
         rows = worksheet.get_all_records()
