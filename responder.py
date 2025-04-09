@@ -111,28 +111,37 @@ def save_found_email(website, email):
     except Exception as e:
         logger.error(f"Error saving email for {website}: {str(e)}")
 
-def send_email(to_email, subject, content):
-    try:
-        msg = MIMEMultipart()
-        msg['From'] = "Jenny from AI Form Reply <info@aiformreply.com>"
-        msg['To'] = to_email
-        msg['Subject'] = subject
-        msg['Reply-To'] = "jenny@autoformchat.com"
+def send_email(to_email, subject, content, max_retries=3):
+    for attempt in range(max_retries):
+        try:
+            msg = MIMEMultipart()
+            msg['From'] = "Jenny from AI Form Reply <info@aiformreply.com>"
+            msg['To'] = to_email
+            msg['Subject'] = subject
+            msg['Reply-To'] = "jenny@autoformchat.com"
 
-        body = MIMEText(content, 'plain')
-        msg.attach(body)
+            body = MIMEText(content, 'plain')
+            msg.attach(body)
 
-        server = smtplib.SMTP(SMTP_SERVER, SMTP_PORT)
-        server.starttls()
-        server.login(EMAIL_ACCOUNT, EMAIL_PASSWORD)
-        server.send_message(msg)
-        server.quit()
+            # Add timeout to SMTP operations
+            server = smtplib.SMTP(SMTP_SERVER, SMTP_PORT, timeout=10)
+            server.starttls()
+            server.login(EMAIL_ACCOUNT, EMAIL_PASSWORD)
+            server.send_message(msg)
+            server.quit()
 
-        logger.info(f"✅ Email sent to {to_email}")
-        return True
-    except Exception as e:
-        logger.error(f"❌ Failed to send email to {to_email}: {str(e)}")
-        return False
+            logger.info(f"✅ Email sent to {to_email} on attempt {attempt + 1}")
+            return True
+        except smtplib.SMTPServerDisconnected:
+            logger.warning(f"SMTP server disconnected on attempt {attempt + 1}, retrying...")
+            time.sleep(2 * (attempt + 1))  # Exponential backoff
+        except Exception as e:
+            logger.error(f"❌ Failed to send email to {to_email} on attempt {attempt + 1}: {str(e)}")
+            if attempt < max_retries - 1:
+                time.sleep(2 * (attempt + 1))
+            else:
+                return False
+    return False
 
 def process_website(website_url, business_name=""):
     emails = find_emails_on_page(website_url)
