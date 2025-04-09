@@ -152,13 +152,19 @@ def is_system_email(subject, from_email, body):
         "no-reply",
         "noreply",
         "do-not-reply",
-        "automated-message"
+        "automated-message",
+        "invoice",
+        "confirmation",
+        "subscription",
+        "payment",
+        "order"
     ]
     
     from_lower = from_email.lower() if from_email else ""
+    subject_lower = subject.lower() if subject else ""
     
-    # Only filter out obvious system emails
-    return any(indicator in from_lower for indicator in system_indicators)
+    # Check both subject and sender for system indicators
+    return any(indicator in from_lower or indicator in subject_lower for indicator in system_indicators)
 
 def process_emails():
     try:
