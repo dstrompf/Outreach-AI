@@ -25,6 +25,11 @@ if not AI_API_KEY:
 import logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
+
+def log_email_check():
+    logger.info(f"Checking emails using account: {EMAIL_ACCOUNT}")
+    logger.info(f"IMAP Server: {IMAP_SERVER}:{IMAP_PORT}")
 
 client = OpenAI(api_key=AI_API_KEY)
 
@@ -42,8 +47,10 @@ knowledge_base = {
 
 
 def fetch_unread_emails():
+    log_email_check()
     # Connect to Zoho IMAP server
     mail = imaplib.IMAP4_SSL(IMAP_SERVER, IMAP_PORT)
+    logger.info("Connected to IMAP server")
     mail.login(EMAIL_ACCOUNT, EMAIL_PASSWORD)
     print("✅ Connected to Jenny's inbox!")
 
