@@ -8,5 +8,6 @@ knowledge_base = {
     ],
     "calendar_support": "Currently, we only support Google Workspace calendar integration. Support for other calendar systems like Calendly and Microsoft Office 365 is under development.",
     "pricing": "Our pricing starts at $99/month.",
-    "demo_response": "I'd be happy to set up a demo! When would be a good time for you?"
+    "demo_response": "I'd be happy to set up a demo! When would be a good time for you?",
+    "sales_process": "Our sales process involves scheduling a meeting first to understand your needs and provide a personalized demo. In the future, we'll have a self-service onboarding section on our website."
 }
