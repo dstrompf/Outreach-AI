@@ -201,7 +201,17 @@ def test_leads():
         qualified = get_qualified_leads()
         if not qualified:
             return {"status": "No qualified leads found", "qualified_leads": []}
-        return {"status": "success", "qualified_leads": qualified}
+        
+        # Count total and Google Workspace leads
+        total_leads = len(qualified)
+        workspace_leads = sum(1 for lead in qualified if lead.get('has_workspace'))
+        
+        return {
+            "status": "success",
+            "total_leads": total_leads,
+            "workspace_leads": workspace_leads,
+            "sample_leads": qualified[:3]  # Show first 3 leads for verification
+        }
     except Exception as e:
         logger.error(f"Error in test_leads endpoint: {str(e)}")
         return {"status": "error", "message": str(e)}
@@ -470,3 +480,19 @@ if __name__ == "__main__":
         access_log=True,
         workers=1
     )
+@app.get("/test_scraping/{encoded_url:path}")
+async def test_scraping(encoded_url: str):
+    import base64
+    try:
+        # Decode URL from base64 to handle special characters
+        url = base64.b64decode(encoded_url).decode('utf-8')
+        scrape_result = scrape_website(ScrapeRequest(url=url))
+        return {
+            "url": url,
+            "success": "error" not in scrape_result,
+            "text_sample": scrape_result.get("text", "")[:200] if "text" in scrape_result else None,
+            "emails_found": scrape_result.get("emails", []),
+            "error": scrape_result.get("error", None)
+        }
+    except Exception as e:
+        return {"error": str(e)}
