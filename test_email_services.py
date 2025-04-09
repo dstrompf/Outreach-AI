@@ -42,7 +42,21 @@ def test_zoho():
     except Exception as e:
         print(f"❌ Zoho test failed: {str(e)}")
 
+def test_openai():
+    try:
+        from openai import OpenAI
+        client = OpenAI()
+        response = client.chat.completions.create(
+            model="gpt-4",
+            messages=[{"role": "user", "content": "Say 'Hello World'"}],
+            max_tokens=10
+        )
+        print("✅ OpenAI API test successful")
+    except Exception as e:
+        print(f"❌ OpenAI test failed: {str(e)}")
+
 if __name__ == "__main__":
-    print("Testing both email services...")
+    print("Testing all services...")
     test_resend()
     test_zoho()
+    test_openai()t_zoho()
