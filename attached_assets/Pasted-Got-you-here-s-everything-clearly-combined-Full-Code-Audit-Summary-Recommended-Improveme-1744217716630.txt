@@ -1,0 +1,164 @@
+Got you — here’s everything clearly combined:
+
+⸻
+
+🛠 Full Code Audit Summary + Recommended Improvements
+
+Type	Rating
+Architecture	✅ Very Good
+Error Handling	✅ Good
+Security/Scaling	⚠️ Could Improve
+Scraping Robustness	⚠️ Could Improve
+Deployment Readiness	✅ Local Only, needs tweaks for production
+
+
+
+⸻
+
+🔍 Issues Found
+	1.	Resend Unused: You import resend but never use it yet.
+	•	→ Remove for now if not needed yet.
+	2.	Hardcoded Google Service Account File:
+	•	→ Use env var fallback instead of hardcoding:
+
+SERVICE_ACCOUNT_FILE = os.getenv("GOOGLE_SERVICE_ACCOUNT_FILE", "ai-outreach-sheets-access-24fe56ec7689.json")
+
+
+	3.	Scraper Timeout Without Retry:
+	•	→ Add retry logic with requests.Session.
+	4.	/generate_email Endpoint Exposes OpenAI Calls Without Limits:
+	•	→ Add basic rate limiting or API keys before going public.
+	5.	Scraping Internal Pages:
+	•	→ Better catch and log failures separately for subpages.
+	6.	Deployment Readiness:
+	•	→ FastAPI is fine locally, but remember cloud deployments ignore __name__ == "__main__". Use main:app.
+
+⸻
+
+🧩 Updated Scraper and Save Functions (Production-Ready)
+
+Here’s how I recommend you rewrite your scraper and Google Sheets save functions to be much safer and stronger:
+
+⸻
+
+🛡️ Updated scrape_website() with Retry Logic
+
+from requests.adapters import HTTPAdapter
+from requests.packages.urllib3.util.retry import Retry
+
+def scrape_website(request: ScrapeRequest):
+    try:
+        # Setup Session with Retry
+        session = requests.Session()
+        retry = Retry(
+            total=3, 
+            backoff_factor=1, 
+            status_forcelist=[429, 500, 502, 503, 504]
+        )
+        adapter = HTTPAdapter(max_retries=retry)
+        session.mount('http://', adapter)
+        session.mount('https://', adapter)
+
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
+        }
+        collected_text = ""
+        collected_emails = set()
+
+        response = session.get(request.url, headers=headers, timeout=10)
+        soup = BeautifulSoup(response.text, "html.parser")
+        collected_text += " ".join([tag.get_text() for tag in soup.find_all(["h1", "h2", "p"])])
+
+        for a in soup.find_all('a', href=True):
+            if "mailto:" in a['href']:
+                email = a['href'].replace('mailto:', '').split('?')[0].strip()
+                if '@' in email and '.' in email:
+                    collected_emails.add(email)
+
+        links = find_internal_links(soup, request.url)
+        for link in links:
+            try:
+                sub_resp = session.get(link, headers=headers, timeout=10)
+                sub_soup = BeautifulSoup(sub_resp.text, "html.parser")
+                collected_text += " ".join([tag.get_text() for tag in sub_soup.find_all(["h1", "h2", "p"])])
+                for a in sub_soup.find_all('a', href=True):
+                    if "mailto:" in a['href']:
+                        collected_emails.add(a['href'].replace('mailto:', '').split('?')[0].strip())
+            except Exception as e:
+                logger.warning(f"Subpage scrape failed: {link} | Error: {str(e)}")
+                continue
+
+        return {"text": collected_text, "emails": list(collected_emails)}
+
+    except Exception as e:
+        logger.error(f"Scrape failed for {request.url}: {str(e)}")
+        return {"error": str(e)}
+
+
+
+⸻
+
+🛡️ Updated save_generated_email() with Env Vars
+
+def save_generated_email(website, email_content, found_email=""):
+    try:
+        # Load service account file dynamically
+        SERVICE_ACCOUNT_FILE = os.getenv("GOOGLE_SERVICE_ACCOUNT_FILE", "ai-outreach-sheets-access-24fe56ec7689.json")
+        SPREADSHEET_URL = os.getenv("SPREADSHEET_URL", "https://docs.google.com/spreadsheets/d/1WbdwNIdbvuCPG_Lh3-mtPCPO8ddLR5RIatcdeq29EPs/edit")
+
+        scopes = [
+            "https://www.googleapis.com/auth/spreadsheets",
+            "https://www.googleapis.com/auth/drive"
+        ]
+        credentials = Credentials.from_service_account_file(SERVICE_ACCOUNT_FILE, scopes=scopes)
+        client = gspread.authorize(credentials)
+        sheet = client.open_by_url(SPREADSHEET_URL)
+
+        worksheet = sheet.worksheet("Generated Emails")
+
+        # Check for existing websites
+        existing_websites = worksheet.col_values(1)
+        if website in existing_websites:
+            logger.info(f"Website {website} already exists. Skipping save.")
+            return False
+
+        worksheet.append_row([website, email_content, found_email, "Pending"])
+        logger.info(f"Saved new website: {website}")
+        return True
+
+    except Exception as e:
+        logger.error(f"Failed to save email: {str(e)}")
+        return False
+
+
+
+⸻
+
+🔥 Tiny Bonus (Optional)
+
+You could even parametrize the number of websites scraped per campaign for more flexibility:
+
+@app.get("/run-campaign")
+def run_campaign(batch_size: int = 5):
+    ...
+    for lead in qualified_leads[:batch_size]:
+        ...
+
+Now you can call /run-campaign?batch_size=10 to scrape 10 at a time instead of hardcoding [:5].
+
+⸻
+
+🧠 Summary for You
+
+✅ You built a very good system
+✅ Small fixes will make it more production-grade
+✅ Scraping will be more reliable with retries
+✅ Google Sheets safer with environment fallback
+✅ No unnecessary imports
+✅ Ready to add real email sending soon if you want
+
+⸻
+
+Would you also want me to show you how to add rate limiting on your /generate_email endpoint in FastAPI? 🚀
+It’s like a 3-line addon and would make it safer if you want to move to production!
+Want me to show that too? 🎯
