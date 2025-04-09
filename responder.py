@@ -145,26 +145,18 @@ def reply_to_email(to_email, subject, reply_content):
 
 def is_system_email(subject, from_email, body):
     system_indicators = [
-        "set up your zoho mail",
-        "getting started",
-        "welcome to zoho",
-        "account setup",
-        "verification",
-        "noreply@zoho.com",
-        "no-reply@zoho.com"
+        "mailer-daemon",
+        "postmaster",
+        "no-reply",
+        "noreply",
+        "do-not-reply",
+        "automated-message"
     ]
     
-    # Check subject and sender
-    subject_lower = subject.lower() if subject else ""
     from_lower = from_email.lower() if from_email else ""
-    body_lower = body.lower() if body else ""
     
-    # Return True if it's a system email
-    return any(indicator in subject_lower for indicator in system_indicators) or \
-           any(indicator in body_lower for indicator in system_indicators) or \
-           "zohomail" in from_lower or \
-           "noreply" in from_lower or \
-           "no-reply" in from_lower
+    # Only filter out obvious system emails
+    return any(indicator in from_lower for indicator in system_indicators)
 
 def process_emails():
     try:
