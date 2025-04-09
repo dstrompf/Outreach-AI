@@ -8,6 +8,7 @@ from bs4 import BeautifulSoup
 from openai import OpenAI
 import os
 from dotenv import load_dotenv
+import time
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -148,26 +149,24 @@ def connect_to_sheet():
         return None
 
 def save_generated_email(website, email_content, found_email=""):
-    max_retries = 5  # Increase retries
-    retry_delay = 5  # Increase delay
-    
+    max_retries = 3
     for attempt in range(max_retries):
         try:
             worksheet = connect_to_sheet()
             if not worksheet:
-                raise Exception("Could not connect to worksheet")
+                raise Exception("Failed to connect to worksheet")
 
             # Check for existing entry with retry
             try:
                 existing_websites = worksheet.col_values(1)
             except Exception as e:
                 logger.warning(f"Retrying to get column values: {str(e)}")
-                time.sleep(retry_delay)
+                time.sleep(5)
                 existing_websites = worksheet.col_values(1)
 
             if website in existing_websites:
                 row_num = existing_websites.index(website) + 1
-                
+
                 # Update with retry
                 try:
                     worksheet.update_cell(row_num, 2, email_content)
@@ -178,7 +177,7 @@ def save_generated_email(website, email_content, found_email=""):
                     if attempt == max_retries - 1:
                         raise e
                     logger.warning(f"Retrying update for {website}: {str(e)}")
-                    time.sleep(retry_delay * (attempt + 1))
+                    time.sleep(5 * (attempt + 1))
                     continue
             else:
                 # Append with retry
@@ -194,9 +193,9 @@ def save_generated_email(website, email_content, found_email=""):
                     if attempt == max_retries - 1:
                         raise e
                     logger.warning(f"Retrying append for {website}: {str(e)}")
-                    time.sleep(retry_delay * (attempt + 1))
+                    time.sleep(5 * (attempt + 1))
                     continue
-            
+
             return True
 
         except Exception as e:
@@ -204,6 +203,10 @@ def save_generated_email(website, email_content, found_email=""):
                 logger.error(f"Failed to save email for {website} after {max_retries} attempts: {str(e)}")
                 return False
             logger.warning(f"Attempt {attempt + 1} failed, retrying: {str(e)}")
-            time.sleep(retry_delay * (attempt + 1))
-    
+            time.sleep(5 * (attempt + 1))
+
     return False
+
+def get_qualified_leads():
+    #Implementation for getting qualified leads.  Replace with your actual logic.
+    return ["https://www.example.com", "https://www.anotherwebsite.com"]

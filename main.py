@@ -232,8 +232,17 @@ def scrape_website(request: ScrapeRequest):
         collected_text = ""
         collected_emails = set()
 
-        # Get main page
-        response = requests.get(request.url, headers=headers, timeout=10)
+        # Get main page with retries
+        max_retries = 3
+        for attempt in range(max_retries):
+            try:
+                response = requests.get(request.url, headers=headers, timeout=10)
+                response.raise_for_status()
+                break
+            except Exception as e:
+                if attempt == max_retries - 1:
+                    raise e
+                time.sleep(2 * (attempt + 1))
         response.raise_for_status()  # Raise an exception for bad status codes
         
         # Store the entire HTML content
@@ -434,9 +443,9 @@ def run_campaign():
                 except Exception as e:
                     logger.warning("Refreshing sheets connection...")
                     credentials = Credentials.from_service_account_file(
-                "ai-outreach-sheets-access-24fe56ec7689.json", scopes=scopes)
-            gc = gspread.authorize(credentials)
-        sheet = gc.open_by_url(
+                        "ai-outreach-sheets-access-24fe56ec7689.json", scopes=scopes)
+                    gc = gspread.authorize(credentials)
+                    sheet = gc.open_by_url(
                         "https://docs.google.com/spreadsheets/d/1WbdwNIdbvuCPG_Lh3-mtPCPO8ddLR5RIatcdeq29EPs/edit"
                     )
                     generated_emails_sheet = sheet.worksheet("Generated Emails")
