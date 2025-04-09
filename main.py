@@ -310,17 +310,17 @@ def run_campaign():
             try:
                 website = lead['website']
                 logger.info(f"Processing website: {website}")
-                
+
                 scrape_resp = scrape_website(ScrapeRequest(url=website))
                 if 'error' in scrape_resp:
                     logger.error(f"Scraping failed for {website}: {scrape_resp['error']}")
                     continue
-                
+
                 if not scrape_resp.get('emails'):
                     logger.info(f"No emails found for {website}")
                     continue
 
-                summarize_resp = summarize(ScrapeRequest(text=scrape_resp['text']))
+                summarize_resp = summarize(SummarizeRequest(text=scrape_resp['text']))
                 if 'error' in summarize_resp:
                     logger.error(f"Summarization failed for {website}")
                     continue
@@ -331,7 +331,7 @@ def run_campaign():
                         summary=summarize_resp['summary']
                     )
                 )
-                
+
                 if 'error' in generate_resp:
                     logger.error(f"Email generation failed for {website}")
                     continue
@@ -385,7 +385,7 @@ def scheduled_campaign():
         logger.info(f"✅ Campaign completed: {result}")
     except Exception as e:
         logger.error(f"❌ Campaign failed: {e}")
-        
+
 scheduler.add_job(scheduled_campaign, 'cron', hour=9, minute=0, id='campaign')
 
 
@@ -401,7 +401,7 @@ def test_email_scraping():
         "https://www.fsf.org/about/contact/"
     ]
     results = []
-    
+
     for website in test_websites:
         try:
             scrape_resp = scrape_website(ScrapeRequest(url=website))
@@ -417,7 +417,7 @@ def test_email_scraping():
                 "success": False,
                 "error": str(e)
             })
-    
+
     return {"results": results}
 
 if __name__ == "__main__":
