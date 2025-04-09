@@ -188,7 +188,8 @@ You can book a quick demo here: https://calendar.google.com/calendar/u/0/appoint
     except Exception as e:
         return {"error": str(e)}
 
-@app.get("/run_campaign")
+@app.get("/run-campaign")
+@app.get("/run_campaign")  # Support both formats
 def run_campaign():
     try:
         qualified_leads = get_qualified_leads()
