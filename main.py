@@ -148,19 +148,36 @@ def health_check():
 @app.post("/generate_email")
 def generate_email(request: GenerateEmailRequest):
     try:
-        prompt = f"""You are an AI outreach assistant specializing in Google Workspace solutions.
+        with open('knowledge_base.txt', 'r') as f:
+            knowledge_base = f.read()
+            
+        prompt = f"""You are Jenny, an AI outreach specialist for AI Form Reply.
 
-Task: Write a personalized cold email for {request.business_name}. They are using Google Workspace.
+Context from their website: {request.summary}
+Business name: {request.business_name}
 
-Based on this business summary: {request.summary}
+Use this knowledge base for the product offering:
+{knowledge_base}
 
-Keep it short, friendly, and focused on how AI form automation can help their business."""
+Task: Write a personalized cold email that:
+1. Opens with a personal observation about their business based on their website
+2. Explains how AI Form Reply can help their specific business case
+3. Focuses on the automated Google Workspace integration
+4. Keeps it short, friendly, and focused on solving slow lead response times
+
+End the email with this footer:
+---
+Note: This email address was found publicly on your website. To unsubscribe and be removed from our database, simply reply with "UNSUBSCRIBE".
+
+Best regards,
+Jenny from AI Form Reply
+info@aiformreply.com"""
 
         response = client.chat.completions.create(
             model="gpt-4",
             messages=[{
                 "role": "system",
-                "content": "You are a friendly outreach email assistant helping offer AI solutions to businesses."
+                "content": "You are Jenny, a friendly outreach specialist focused on helping businesses automate their lead responses."
             }, {
                 "role": "user",
                 "content": prompt
