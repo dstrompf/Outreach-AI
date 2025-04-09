@@ -42,7 +42,7 @@ knowledge_base = {
     "google_workspace":
     "AI Form Reply integrates seamlessly with Google Workspace. It uses Google Calendar for scheduling and Google Meet for virtual meetings.",
     "default":
-    "I’m happy to help with any other questions! Feel free to ask about how AI Form Reply can help automate your lead management and scheduling process.",
+    "I'm happy to help with any other questions! Feel free to ask about how AI Form Reply can help automate your lead management and scheduling process.",
 }
 
 
@@ -80,36 +80,19 @@ def fetch_unread_emails():
     return emails
 
 
-def generate_reply(message, website=""):
-    """Generate a reply from Jenny based on the message content."""
-    prompt = f"""
-    You are an AI assistant for a marketing agency. You respond in a friendly and professional manner.
-    If the email mentions Google Workspace, explain that our AI Form Reply integrates directly with it, automating form-to-lead conversions and booking meetings.
-
-    Here’s the message:
-    {message}
-
-    If the user asks about the AI automation process, explain it in simple terms, and mention Google Workspace integration. 
-    Be sure to offer a free consultation or demo if they’re interested.
-    Use the website info to sound more personalized (if available).
-
-    Respond with an email reply.
-    """
-
-    # Use OpenAI to generate a personalized response
-    response = client.chat.completions.create(
-        model="gpt-4",
-        messages=[{
-            "role":
-            "system",
-            "content":
-            "You are a friendly and helpful outreach assistant."
-        }, {
-            "role": "user",
-            "content": prompt
-        }])
-
-    return response.choices[0].message.content
+def generate_reply(email_body):
+    try:
+        response = client.chat.completions.create(
+            model="gpt-4",
+            messages=[
+                {"role": "system", "content": "You are Jenny, a helpful AI assistant. Respond naturally and professionally to customer inquiries about AI Form Reply."},
+                {"role": "user", "content": f"Please respond to this email: {email_body}"}
+            ]
+        )
+        return response.choices[0].message.content
+    except Exception as e:
+        logger.error(f"Error generating reply: {e}")
+        return "Thank you for your email. I'll get back to you shortly."
 
 
 def reply_to_email(to_email, subject, reply_content):
