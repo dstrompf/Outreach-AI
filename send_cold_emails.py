@@ -10,7 +10,29 @@ load_dotenv()
 resend.api_key = os.getenv("RESEND_API_KEY")
 
 # Config
-MAX_EMAILS_PER_DAY = 10
+BASE_EMAILS_PER_DAY = 5  # Starting point
+MAX_EMAILS_PER_DAY = 50  # Maximum cap
+WARM_UP_INCREASE_PERCENT = 15  # Daily increase percentage
+
+def get_warmed_email_limit():
+    try:
+        # Read the current day count from a file
+        with open('email_warm_up.txt', 'r') as f:
+            day_count = int(f.read().strip())
+    except FileNotFoundError:
+        day_count = 1
+        
+    # Calculate warmed limit with 15% daily increase
+    warmed_limit = min(
+        MAX_EMAILS_PER_DAY,
+        int(BASE_EMAILS_PER_DAY * (1 + (WARM_UP_INCREASE_PERCENT/100)) ** (day_count-1))
+    )
+    
+    # Save incremented day count
+    with open('email_warm_up.txt', 'w') as f:
+        f.write(str(day_count + 1))
+        
+    return warmed_limit
 
 # Subject lines to rotate
 SUBJECT_LINES = [
@@ -54,8 +76,10 @@ def run_cold_email_campaign():
     worksheet = connect_to_sheet()
     data = worksheet.get_all_records()
 
+    daily_limit = get_warmed_email_limit()
+    print(f"📈 Today's warmed email limit: {daily_limit}")
     unsent_leads = [row for row in data if not row.get('Sent?')]
-    leads_to_send = unsent_leads[:MAX_EMAILS_PER_DAY]
+    leads_to_send = unsent_leads[:daily_limit]
     print(f"📬 Sending {len(leads_to_send)} cold emails today...")
 
     for lead in leads_to_send:
