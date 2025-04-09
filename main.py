@@ -99,18 +99,22 @@ def save_generated_email(website, email_content, found_email=""):
         sheet = client.open_by_url(
             "https://docs.google.com/spreadsheets/d/1WbdwNIdbvuCPG_Lh3-mtPCPO8ddLR5RIatcdeq29EPs/edit"
         )
-        worksheet = sheet.worksheet("Generated Emails")
+        try:
+            worksheet = sheet.worksheet("Generated Emails")
 
-        # Check for existing websites
-        existing_websites = worksheet.col_values(1)
-        if website in existing_websites:
-            logger.info(f"Website {website} already exists. Skipping save.")
+            # Check for existing websites
+            existing_websites = worksheet.col_values(1)
+            if website in existing_websites:
+                logger.info(f"Website {website} already exists. Skipping save.")
+                return False
+
+            worksheet.append_row([website, email_content, found_email, "Pending"])
+            logger.info(f"Found {len(existing_websites)} existing processed websites")
+            logger.info(f"Saved new website: {website}")
+            return True
+        except Exception as e:
+            logger.error(f"Failed to save email: {str(e)}")
             return False
-
-        worksheet.append_row([website, email_content, found_email, "Pending"])
-        logger.info(f"Found {len(existing_websites)} existing processed websites")
-        logger.info(f"Saved new website: {website}")
-        return True
     except Exception as e:
         logger.error(f"Failed to save email: {str(e)}")
         return False
