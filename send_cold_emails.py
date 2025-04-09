@@ -11,7 +11,7 @@ resend.api_key = os.getenv("RESEND_API_KEY")
 
 # Config
 BASE_EMAILS_PER_DAY = 5  # Starting point
-MAX_EMAILS_PER_DAY = 50  # Maximum cap
+MAX_EMAILS_PER_DAY = 200  # Maximum cap
 WARM_UP_INCREASE_PERCENT = 15  # Daily increase percentage
 
 def get_warmed_email_limit():
