@@ -23,14 +23,13 @@ load_dotenv()
 app = FastAPI()
 
 # Configure CORS
-origins = ["*"]
-
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
-    allow_credentials=False,
-    allow_methods=["*"],
-    allow_headers=["*"]
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["GET", "POST", "PUT", "DELETE"],
+    allow_headers=["*"],
+    max_age=3600
 )
 
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
@@ -403,4 +402,4 @@ def test_email_scraping():
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=5000)
+    uvicorn.run(app, host="0.0.0.0", port=5000, log_level="info", reload=True)
