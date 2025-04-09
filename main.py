@@ -344,26 +344,3 @@ def test_email_scraping():
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=5000)
-    test_websites = [
-        "https://www.example.com",  # Replace with real test URLs
-        "https://www.test.com"
-    ]
-    results = []
-    
-    for website in test_websites:
-        try:
-            scrape_resp = scrape_website(ScrapeRequest(url=website))
-            results.append({
-                "website": website,
-                "success": "error" not in scrape_resp,
-                "emails_found": scrape_resp.get("emails", []),
-                "error": scrape_resp.get("error", None)
-            })
-        except Exception as e:
-            results.append({
-                "website": website,
-                "success": False,
-                "error": str(e)
-            })
-    
-    return {"results": results}
