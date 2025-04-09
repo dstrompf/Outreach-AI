@@ -7,7 +7,7 @@ import random
 from openai import OpenAI
 import os
 from dotenv import load_dotenv
-from sheets import get_qualified_leads
+from sheets import get_qualified_leads, connect_to_sheet
 import gspread
 from google.oauth2.service_account import Credentials
 import requests
