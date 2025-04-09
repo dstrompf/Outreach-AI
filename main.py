@@ -9,7 +9,6 @@ from dotenv import load_dotenv
 from sheets import get_qualified_leads
 import gspread
 from google.oauth2.service_account import Credentials
-import resend
 import requests
 from bs4 import BeautifulSoup
 from urllib.parse import urljoin
@@ -56,13 +55,24 @@ def find_internal_links(soup, base_url):
 
 def scrape_website(request: ScrapeRequest):
     try:
+        # Setup Session with Retry
+        session = requests.Session()
+        retry_strategy = requests.packages.urllib3.util.retry.Retry(
+            total=3,
+            backoff_factor=1,
+            status_forcelist=[429, 500, 502, 503, 504]
+        )
+        adapter = requests.adapters.HTTPAdapter(max_retries=retry_strategy)
+        session.mount('http://', adapter)
+        session.mount('https://', adapter)
+
         headers = {
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
         }
         collected_text = ""
         collected_emails = set()
 
-        response = requests.get(request.url, headers=headers, timeout=10)
+        response = session.get(request.url, headers=headers, timeout=10)
         soup = BeautifulSoup(response.text, "html.parser")
         collected_text += " ".join([tag.get_text() for tag in soup.find_all(["h1", "h2", "p"])])
 
@@ -90,12 +100,14 @@ def scrape_website(request: ScrapeRequest):
 
 def save_generated_email(website, email_content, found_email=""):
     try:
+        SERVICE_ACCOUNT_FILE = os.getenv("GOOGLE_SERVICE_ACCOUNT_FILE", "ai-outreach-sheets-access-24fe56ec7689.json")
+        SPREADSHEET_URL = os.getenv("SPREADSHEET_URL", "https://docs.google.com/spreadsheets/d/1WbdwNIdbvuCPG_Lh3-mtPCPO8ddLR5RIatcdeq29EPs/edit")
+        
         scopes = [
             "https://www.googleapis.com/auth/spreadsheets",
             "https://www.googleapis.com/auth/drive"
         ]
-        credentials = Credentials.from_service_account_file(
-            "ai-outreach-sheets-access-24fe56ec7689.json", scopes=scopes)
+        credentials = Credentials.from_service_account_file(SERVICE_ACCOUNT_FILE, scopes=scopes)
         client = gspread.authorize(credentials)
         sheet = client.open_by_url(
             "https://docs.google.com/spreadsheets/d/1WbdwNIdbvuCPG_Lh3-mtPCPO8ddLR5RIatcdeq29EPs/edit"
