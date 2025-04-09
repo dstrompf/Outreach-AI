@@ -1,7 +1,7 @@
-
 import gspread
 import time
 import logging
+import os
 from google.oauth2.service_account import Credentials
 
 
@@ -41,44 +41,30 @@ def connect_to_sheet():
 
 def get_qualified_leads():
     try:
-        sheet = connect_to_sheet()
-        if not sheet:
-            logger.error("Failed to connect to sheet")
+        SERVICE_ACCOUNT_FILE = "ai-outreach-sheets-access-24fe56ec7689.json"
+        SPREADSHEET_URL = "https://docs.google.com/spreadsheets/d/1WbdwNIdbvuCPG_Lh3-mtPCPO8ddLR5RIatcdeq29EPs/edit"
+
+        if not os.path.exists(SERVICE_ACCOUNT_FILE):
+            logger.error(f"Service account file not found: {SERVICE_ACCOUNT_FILE}")
             return []
-            
-        # Get main worksheet and sent worksheet
+
+        scopes = ['https://www.googleapis.com/auth/spreadsheets']
+        credentials = Credentials.from_service_account_file(SERVICE_ACCOUNT_FILE, scopes=scopes)
+        client = gspread.authorize(credentials)
+
+        sheet = client.open_by_url(SPREADSHEET_URL)
         worksheet = sheet.worksheet("Sheet1")
-        sent_worksheet = sheet.worksheet("Generated Emails")
 
-        # Get already processed websites
-        processed_websites = set()
-        try:
-            processed_websites = set(sent_worksheet.col_values(1)[1:])  # Skip header
-        except Exception as e:
-            logger.error(f"Error getting processed websites: {e}")
+        records = worksheet.get_all_records()
+        logger.info(f"Successfully retrieved {len(records)} qualified leads")
+        return records
 
-        # Get all records with proper column mapping
-        all_records = worksheet.get_all_records()
-        qualified_leads = []
-
-        for record in all_records:
-            website = record.get('Website', '').strip()
-            business_name = record.get('Business Name', '').strip()
-            google_workspace = str(record.get('Google Workspace', '')).strip().upper()
-
-            if (website and 
-                website not in processed_websites and 
-                google_workspace == 'YES'):
-                
-                qualified_leads.append({
-                    'website': website,
-                    'business_name': business_name,
-                    'has_workspace': True
-                })
-
-        logger.info(f"Found {len(qualified_leads)} qualified leads")
-        return qualified_leads
-
+    except gspread.exceptions.SpreadsheetNotFound:
+        logger.error(f"Spreadsheet not found: {SPREADSHEET_URL}")
+        return []
+    except gspread.exceptions.WorksheetNotFound:
+        logger.error("Worksheet 'Sheet1' not found")
+        return []
     except Exception as e:
-        logger.error(f"Error in get_qualified_leads: {str(e)}")
+        logger.error(f"Error getting qualified leads: {str(e)}")
         return []

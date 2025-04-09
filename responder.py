@@ -77,11 +77,17 @@ def connect_to_sheet():
         return None
 
 def find_emails_on_page(url):
+    if not url.startswith(('http://', 'https://')):
+        logger.error(f"Invalid URL format: {url}")
+        return []
+        
     try:
         headers = {
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
         }
         response = requests.get(url, headers=headers, timeout=10)
+        response.raise_for_status()  # Raise an error for bad status codes
+        
         soup = BeautifulSoup(response.text, 'html.parser')
         emails = set()
 
@@ -94,8 +100,11 @@ def find_emails_on_page(url):
                     emails.add(email)
 
         return list(emails)
+    except requests.RequestException as e:
+        logger.error(f"Request error for {url}: {str(e)}")
+        return []
     except Exception as e:
-        logger.error(f"Error finding emails on {url}: {str(e)}")
+        logger.error(f"Unexpected error processing {url}: {str(e)}")
         return []
 
 def save_found_email(website, email):

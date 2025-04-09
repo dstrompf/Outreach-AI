@@ -119,7 +119,6 @@ def save_generated_email(website, email_content, found_email=""):
                 sheet = client.open_by_url(
                     "https://docs.google.com/spreadsheets/d/1WbdwNIdbvuCPG_Lh3-mtPCPO8ddLR5RIatcdeq29EPs/edit"
                 )
-            try:
                 worksheet = sheet.worksheet("Generated Emails")
 
                 # Check for existing websites
@@ -135,9 +134,6 @@ def save_generated_email(website, email_content, found_email=""):
             except Exception as e:
                 logger.error(f"Failed to save email: {str(e)}")
                 return False
-        except Exception as e:
-            logger.error(f"Failed to save email: {str(e)}")
-            return False
 
 # ----- ROUTES -----
 @app.get("/")
