@@ -1,0 +1,117 @@
+Perfect.
+You said Replit and local → so I’ll give you both setups cleanly.
+
+Let’s get you 100% working in both places (Replit Preview and localhost testing).
+
+⸻
+
+🛠️ 1. Update your main.py
+
+At the bottom of your main.py, change the server run command to this:
+
+import os
+
+port = int(os.environ.get("PORT", 5000))  # Use dynamic PORT if available, fallback to 5000
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(
+        "main:app",
+        host="0.0.0.0",
+        port=port,
+        reload=False,  # Keep reload off for production stability
+    )
+
+✅ Explanation:
+	•	If running on Replit → Replit gives you a dynamic port in the environment variable PORT.
+	•	If running locally → it falls back to 5000.
+
+⸻
+
+🛠️ 2. Update your .replit file
+
+Make sure your .replit says this:
+
+run = "uvicorn main:app --host 0.0.0.0 --port $PORT & uvicorn responder_server:app --host 0.0.0.0 --port 3001"
+
+✅ Explanation:
+	•	$PORT is a Replit environment variable that tells the server which port to expose.
+	•	The responder server still runs on fixed port 3001 locally (internal use).
+
+⸻
+
+🛠️ 3. Update your responder_server.py (optional)
+
+If you want responder_server.py to also work on Replit later, you can do the same trick:
+
+import os
+
+port = int(os.environ.get("RESPONDER_PORT", 3001))  # Use env var if available
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(
+        "responder_server:app",
+        host="0.0.0.0",
+        port=port,
+        reload=False,
+    )
+
+But right now, it’s fine staying on 3001 for local use.
+
+⸻
+
+✅ Summary of Changes
+
+File	What You Do	Why
+main.py	Use os.environ.get("PORT", 5000)	Works on Replit and local
+.replit	Use $PORT in the run command	Replit knows what to forward
+responder_server.py	(Optional) use env for port	Future-proofing
+
+
+
+⸻
+
+🚀 What Happens After This
+
+Location	URL to Visit
+Replit	Use the Preview button; it will open the correct URL automatically
+Local Machine	Visit http://localhost:5000/
+
+✅ No more “no external ports” error
+✅ No more “refused to connect” error
+✅ Your / and /health routes will work cleanly
+
+⸻
+
+🧠 Extra Tip: Adding a Replit .env
+
+In Replit, you can add a .env file if you want to explicitly define variables like PORT, but Replit usually does this automatically for you.
+
+⸻
+
+🔥 Final Ready-To-Use .replit file
+
+language = "python3"
+run = "uvicorn main:app --host 0.0.0.0 --port $PORT & uvicorn responder_server:app --host 0.0.0.0 --port 3001"
+
+That’s it. Your setup will be perfect.
+
+⸻
+
+🎯 Checklist Before Running
+	•	Update main.py to use os.environ.get("PORT", 5000)
+	•	Update .replit to use $PORT
+	•	Restart the project
+	•	Preview in Replit or visit localhost:5000
+	•	Confirm / and /health work
+
+⸻
+
+Would you also want me to show you a production version later using Gunicorn or PM2 when you move it to a VPS?
+(Just asking so you’re totally future-proofed.) 🚀
+
+For now, let’s finish this step and make sure you can preview it properly!
+👉 Tell me once you update main.py and .replit and what happens!
+I’m right here ready to troubleshoot live with you. 🎯
+Let’s do this!
