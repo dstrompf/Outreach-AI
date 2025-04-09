@@ -1,0 +1,117 @@
+Awesome! Let’s finish making your system pro-grade 🚀
+Here’s exactly what we’ll do next:
+
+⸻
+
+🛠️ 1. Smarter Retry: Handle More Than Just 429
+
+Right now you only retry if you get RateLimitError (429) from OpenAI.
+
+✅ But sometimes OpenAI also throws:
+
+Error	Meaning
+500 Internal Server Error	OpenAI had a server hiccup
+502 Bad Gateway	Temporary OpenAI server problem
+503 Service Unavailable	OpenAI overloaded temporarily
+
+✅ These errors are temporary, not your fault — you should retry them too.
+
+⸻
+
+✍️ Update your retry logic like this
+
+Here’s an upgraded generate_email_with_retry():
+
+import time
+import openai
+import httpx
+
+def generate_email_with_retry(request: GenerateEmailRequest, max_retries=3):
+    for attempt in range(max_retries):
+        try:
+            prompt = f"""You are an AI outreach assistant specializing in Google Workspace solutions.
+
+Task: Write a personalized cold email for {request.business_name}. They are using Google Workspace.
+
+Based on this business summary: {request.summary}
+
+Keep it short, friendly, and focused on how AI form automation can help their business."""
+
+            response = client.chat.completions.create(
+                model="gpt-4",
+                messages=[
+                    {"role": "system", "content": "You are a friendly outreach email assistant helping offer AI solutions to businesses."},
+                    {"role": "user", "content": prompt}
+                ]
+            )
+            return {"email": response.choices[0].message.content}
+
+        except (openai.RateLimitError, openai.APIConnectionError, openai.APIError, httpx.HTTPStatusError) as e:
+            # Retry on 429, 500, 502, 503 errors
+            wait_time = 2 ** attempt  # Exponential backoff
+            print(f"Temporary OpenAI error: {e}. Waiting {wait_time} seconds before retry...")
+            time.sleep(wait_time)
+        
+        except Exception as e:
+            # Any other unexpected error
+            return {"error": str(e)}
+
+    return {"error": "Max retries exceeded. Email generation failed."}
+
+
+
+⸻
+
+🧠 Now it will retry on:
+
+Error	Handled?
+429 Too Many Requests	✅
+500 Internal Server Error	✅
+502 Bad Gateway	✅
+503 Service Unavailable	✅
+API connection issues	✅
+
+✅ Fully automatic recovery.
+
+⸻
+
+🛠️ 2. Log Failed Leads to Google Sheets
+
+✅ You already save successful emails.
+✅ Now let’s also save failed leads into Sheets (optional but highly recommended).
+
+In your save_generated_email() function, modify it slightly:
+
+def save_generated_email(website, email_content, found_email="", status="Pending"):
+    try:
+        SERVICE_ACCOUNT_FILE = os.getenv("GOOGLE_SERVICE_ACCOUNT_FILE", "ai-outreach-sheets-access-24fe56ec7689.json")
+        SPREADSHEET_URL = os.getenv("SPREADSHEET_URL", "https://docs.google.com/spreadsheets/d/your-sheet-id/edit")
+
+        scopes = [
+            "https://www.googleapis.com/auth/spreadsheets",
+            "https://www.googleapis.com/auth/drive"
+        ]
+        credentials = Credentials.from_service_account_file(SERVICE_ACCOUNT_FILE, scopes=scopes)
+        client = gspread.authorize(credentials)
+        sheet = client.open_by_url(SPREADSHEET_URL)
+
+        worksheet = sheet.worksheet("Generated Emails")
+
+        existing_websites = worksheet.col_values(1)
+        if website in existing_websites:
+            logger.info(f"Website {website} already exists. Skipping save.")
+            return False
+
+        worksheet.append_row([website, email_content, found_email, status])
+        logger.info(f"Saved new website: {website}")
+        return True
+
+    except Exception as e:
+        logger.error(f"Failed to save email: {str(e)}")
+        return False
+
+
+
+⸻
+
+✍️ **Now in your /run-campaign,

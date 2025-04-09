@@ -1,0 +1,129 @@
+Awesome! 🚀
+Let’s set up PM2 so your servers are automatically managed, restart if they crash, and start on reboot — just like a real production app.
+
+Here’s your full step-by-step PM2 setup guide:
+
+⸻
+
+🛠️ Step 1: Install PM2
+
+✅ PM2 is a process manager made for Node.js originally, but it works perfectly with any server, including Python!
+
+Install PM2 globally:
+
+npm install -g pm2
+
+(If you don’t have Node/npm installed, you might first need to run sudo apt install nodejs npm.)
+
+✅ Check it installed:
+
+pm2 --version
+
+You should see something like 5.2.2 (or higher).
+
+⸻
+
+🛠️ Step 2: Create PM2 Start Commands
+
+Now you’ll create PM2 “apps” for each of your servers.
+
+✅ Start your main.py app with PM2:
+
+pm2 start uvicorn main:app --name main_server --host 0.0.0.0 --port 5000
+
+✅ Start your responder_server.py app with PM2:
+
+pm2 start uvicorn responder_server:app --name responder_server --host 0.0.0.0 --port 3001
+
+✅ PM2 will now watch and restart both servers if they crash.
+
+⸻
+
+🛠️ Step 3: Save the Process List
+
+✅ Save the currently running PM2 apps, so they restart after a server reboot:
+
+pm2 save
+
+This saves the process list to PM2’s startup file.
+
+⸻
+
+🛠️ Step 4: Configure PM2 Startup on Boot
+
+✅ Make PM2 automatically launch your servers if your machine reboots:
+
+pm2 startup
+
+It will print a command — copy and paste the command it gives you.
+It usually looks something like:
+
+sudo env PATH=$PATH:/usr/bin pm2 startup linux -u your-username --hp /home/your-username
+
+✅ Then run:
+
+pm2 save
+
+again after that to save.
+
+⸻
+
+🧠 How to Manage Your Apps After Setup
+
+Command	What It Does
+pm2 list	Show running apps
+pm2 restart [name]	Restart an app
+pm2 stop [name]	Stop an app
+pm2 delete [name]	Remove an app
+pm2 logs	View logs live
+pm2 logs [name]	View logs for a specific app
+
+✅ Example:
+
+pm2 restart main_server
+pm2 logs responder_server
+
+
+
+⸻
+
+🔥 Now your system will:
+
+Feature	Result
+Crash recovery	Auto-restart if anything crashes
+Auto-start	Auto-start on server reboot
+Log monitoring	pm2 logs shows server activity
+Manual management	Easy to restart/stop individually
+
+
+
+⸻
+
+🎯 Final Pro Setup Checklist
+
+Item	Status
+Health endpoints (/health)	✅ Done
+Smart OpenAI retry logic	✅ Done
+Save failed leads to Sheets	✅ Done
+PM2 automatic server management	🚀 (You’re doing it now)
+
+
+
+⸻
+
+🚀 You are now basically PRODUCTION READY!
+
+✅ Your app is stable.
+✅ Your app self-heals.
+✅ Your app auto-starts.
+
+⸻
+
+🧩 Would you also want me to show you:
+	•	How to create a PM2 Ecosystem File (ecosystem.config.js) so you can start/stop both apps together with one command?
+	•	(It’s super clean if you want to fully package it professionally.)
+
+Would you want that next? 🎯
+Let’s wrap it up tight!
+Ready to go all the way? 🚀
+Let’s do it!
