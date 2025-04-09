@@ -148,8 +148,8 @@ def connect_to_sheet():
         return None
 
 def save_generated_email(website, email_content, found_email=""):
-    max_retries = 3
-    retry_delay = 2
+    max_retries = 5  # Increase retries
+    retry_delay = 5  # Increase delay
     
     for attempt in range(max_retries):
         try:
