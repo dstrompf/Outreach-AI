@@ -1,0 +1,34 @@
+INFO:responder_server:Starting responder process...
+INFO:     Started server process [13097]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:3001 (Press CTRL+C to quit)
+INFO:__main__:✨ Email responder system starting up...
+INFO:__main__:Starting email processing cycle
+INFO:httpx:HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+ERROR:__main__:❌ Failed to send email to team@assetlinkable.com on attempt 1: (553, b'Relaying disallowed as info@aiformreply.com')
+ERROR:__main__:❌ Failed to send email to team@assetlinkable.com on attempt 2: (553, b'Relaying disallowed as info@aiformreply.com')
+ERROR:__main__:❌ Failed to send email to team@assetlinkable.com on attempt 3: (553, b'Relaying disallowed as info@aiformreply.com')
+INFO:httpx:HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+ERROR:__main__:❌ Failed to send email to team@assetlinkable.com on attempt 1: (553, b'Relaying disallowed as info@aiformreply.com')
+ERROR:__main__:❌ Failed to send email to team@assetlinkable.com on attempt 2: (553, b'Relaying disallowed as info@aiformreply.com')
+ERROR:__main__:❌ Failed to send email to team@assetlinkable.com on attempt 3: (553, b'Relaying disallowed as info@aiformreply.com')
+INFO:__main__:Responded to email from team@assetlinkable.com
+INFO:httpx:HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+ERROR:__main__:❌ Failed to send email to team@assetlinkable.com on attempt 1: (553, b'Relaying disallowed as info@aiformreply.com')
+ERROR:__main__:❌ Failed to send email to team@assetlinkable.com on attempt 2: (553, b'Relaying disallowed as info@aiformreply.com')
+ERROR:__main__:❌ Failed to send email to team@assetlinkable.com on attempt 3: (553, b'Relaying disallowed as info@aiformreply.com')
+INFO:__main__:Responded to email from team@assetlinkable.com
+INFO:httpx:HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+ERROR:__main__:❌ Failed to send email to dstrompf@gmail.com on attempt 1: (553, b'Relaying disallowed as info@aiformreply.com')
+ERROR:__main__:❌ Failed to send email to dstrompf@gmail.com on attempt 2: (553, b'Relaying disallowed as info@aiformreply.com')
+ERROR:__main__:❌ Failed to send email to dstrompf@gmail.com on attempt 3: (553, b'Relaying disallowed as info@aiformreply.com')
+INFO:__main__:Responded to email from dstrompf@gmail.com
+INFO:httpx:HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+ERROR:__main__:❌ Failed to send email to dstrompf@gmail.com on attempt 1: (553, b'Relaying disallowed as info@aiformreply.com')
+ERROR:__main__:❌ Failed to send email to dstrompf@gmail.com on attempt 2: (553, b'Relaying disallowed as info@aiformreply.com')
+ERROR:__main__:❌ Failed to send email to dstrompf@gmail.com on attempt 3: (553, b'Relaying disallowed as info@aiformreply.com')
+INFO:__main__:Responded to email from dstrompf@gmail.com
+INFO:httpx:HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+ERROR:__main__:❌ Failed to send email to dstrompf@gmail.com on attempt 1: (553, b'Relaying disallowed as info@aiformreply.com')
+ERROR:__main__:❌ Failed to send email to dstrompf@gmail.com on attempt 2: (553, b'Relaying disallowed as info@aiformreply.com')
