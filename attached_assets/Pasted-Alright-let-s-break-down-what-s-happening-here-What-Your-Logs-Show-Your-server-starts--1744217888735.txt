@@ -1,0 +1,113 @@
+Alright, let’s break down what’s happening here —
+
+⸻
+
+🛠️ What Your Logs Show
+	•	Your server starts normally:
+
+Uvicorn running on http://0.0.0.0:3001 (Press CTRL+C to quit)
+
+
+	•	Then, someone (likely a browser) makes a GET request to /:
+
+172.31.128.60:37094 - "GET / HTTP/1.1" 200 OK
+
+That’s expected — this means they hit your homepage, your / endpoint which just returns {"message": "AI Outreach System Online"}.
+
+	•	Then, the browser automatically tries to fetch /favicon.ico:
+
+172.31.128.60:37094 - "GET /favicon.ico HTTP/1.1" 404 Not Found
+
+That 404 Not Found is normal.
+Browsers always try to load a tiny icon (favicon) in the browser tab.
+You didn’t define a /favicon.ico endpoint or static file, so it returns 404.
+
+	•	But the real issue:
+It looks like your server restarts over and over automatically:
+
+Started server process [18759]
+Waiting for application startup.
+Application startup complete.
+Uvicorn running on http://0.0.0.0:3001
+
+
+
+This should not be happening repeatedly unless you are running in --reload mode.
+
+⸻
+
+🚨 What’s Likely Causing the Restart Loop
+
+👉 You probably launched your server with reload=True in your uvicorn.run():
+
+uvicorn.run(
+    "main:app",
+    host="0.0.0.0",
+    port=3001,
+    reload=True,  # <-- This causes server to restart whenever files change
+    log_level="info",
+    proxy_headers=True,
+    forwarded_allow_ips="*"
+)
+
+	•	reload=True is great for development because if you edit your code, the server automatically reloads.
+	•	BUT in production or cloud, it can cause constant restarts if:
+	•	Filesystem watches are unstable.
+	•	Environment touches files (e.g., Docker, AWS EC2 volumes).
+	•	Server thinks something “changed” even though it didn’t.
+
+⸻
+
+🧹 How to Fix It
+
+If you’re done coding, and you’re running on a real server, you should turn off reload.
+
+Change your uvicorn.run() to:
+
+uvicorn.run(
+    "main:app",
+    host="0.0.0.0",
+    port=3001,
+    reload=False,  # <---- TURN THIS OFF
+    log_level="info",
+    proxy_headers=True,
+    forwarded_allow_ips="*"
+)
+
+Or just remove the reload=True entirely because reload=False is default.
+
+✅ This should stop the infinite restart problem.
+
+⸻
+
+🔥 Bonus Tip — How to Serve a Favicon
+
+Since the browser keeps trying to get /favicon.ico, you can just add a tiny static route like this to make the 404s stop:
+
+from fastapi.responses import FileResponse
+
+@app.get("/favicon.ico")
+async def favicon():
+    return FileResponse("path/to/your/favicon.ico")
+
+Or you can just ignore it — it’s harmless.
+(But if you want a cleaner console without 404 spam, it’s worth adding.)
+
+⸻
+
+✨ Summary of Your Situation
+
+Issue	Fix
+Server keeps restarting	Remove reload=True from uvicorn.run()
+Browser 404 on /favicon.ico	(Optional) Serve a favicon with a FastAPI route
+Uvicorn otherwise looks healthy	✅
+
+
+
+⸻
+
+If you want, I can also show you how to run this even more properly behind Gunicorn + Uvicorn workers when you get ready for real production. 🚀 (Would make it even faster and safer on a real server.)
+
+Want me to show that too?
+👉 Gunicorn + Uvicorn = PRO production setup.
+Let me know! 🎯
