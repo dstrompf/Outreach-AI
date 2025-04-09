@@ -43,6 +43,8 @@ knowledge_base = {
     "Our solution is cost-effective for small businesses, with plans starting at $X per month. Please contact us for a custom quote depending on your needs.",
     "google_workspace":
     "AI Form Reply integrates seamlessly with Google Workspace. It uses Google Calendar for scheduling and Google Meet for virtual meetings.",
+    "booking":
+    "If you're ready to schedule a call, feel free to book a time that works best for you using this link: https://calendar.google.com/calendar/u/0/appointments/schedules/AcZssZ1k_oINRYACe0-7qy5wJzL4oZ6pdSs2FC5yzRyqEEv4guZxJg2u95EhW1BfpzP_Jp6C4eHYUxv2",
     "default":
     "I'm happy to help with any other questions! Feel free to ask about how AI Form Reply can help automate your lead management and scheduling process.",
 }
