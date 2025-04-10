@@ -4,6 +4,7 @@ import { auth, db } from '../firebase';
 import { signOut } from 'firebase/auth';
 import { useState, useEffect } from 'react';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
+import Settings from './Settings';
 
 function Dashboard() {
   const { user } = useAuth();
@@ -102,6 +103,8 @@ function Dashboard() {
           Save
         </button>
       </div>
+
+      <Settings />
 
       <div style={{ marginTop: '32px' }}>
         <button 
