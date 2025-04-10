@@ -1,4 +1,3 @@
-
 import { useAuth } from '../hooks/useAuth';
 import { auth, db } from '../firebase';
 import { signOut } from 'firebase/auth';
@@ -11,6 +10,7 @@ function Dashboard() {
   const [trialDaysLeft, setTrialDaysLeft] = useState(null);
   const [knowledgeBase, setKnowledgeBase] = useState('');
   const [loading, setLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
     async function fetchTrial() {
@@ -36,13 +36,20 @@ function Dashboard() {
     fetchTrial();
   }, [user]);
 
-  async function saveKnowledgeBase() {
-    if (!user) return;
-    await setDoc(doc(db, 'users', user.uid), {
-      knowledgeBase
-    }, { merge: true });
-    alert('Knowledge Base saved!');
-  }
+  const saveKnowledgeBase = async () => {
+    if (!user || isSaving) return;
+    setIsSaving(true);
+    try {
+      await setDoc(doc(db, 'users', user.uid), {
+        knowledgeBase
+      }, { merge: true });
+      alert('Knowledge Base saved!');
+    } catch (error) {
+      alert('Error saving Knowledge Base:', error);
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   function handleLogout() {
     signOut(auth);
@@ -97,10 +104,12 @@ function Dashboard() {
             padding: '8px 16px',
             borderRadius: '4px',
             border: 'none',
-            cursor: 'pointer'
+            cursor: 'pointer',
+            opacity: isSaving ? 0.5 : 1 // Indicate saving progress
           }}
+          disabled={isSaving} // Prevent multiple clicks during saving
         >
-          Save
+          {isSaving ? 'Saving...' : 'Save'}
         </button>
       </div>
 

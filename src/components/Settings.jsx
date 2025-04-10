@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { updateEmail, updatePassword } from 'firebase/auth';
 import { useAuth } from '../hooks/useAuth';
@@ -23,6 +22,12 @@ function Settings() {
   async function handlePasswordUpdate(e) {
     e.preventDefault();
     try {
+      // Check if user needs to re-authenticate
+      const lastSignInTime = new Date(user.metadata.lastSignInTime).getTime();
+      if (Date.now() - lastSignInTime > 300000) {
+        alert('Please sign out and sign in again to update your password');
+        return;
+      }
       await updatePassword(user, newPassword);
       setMessage({ text: 'Password updated successfully!', isError: false });
       setNewPassword('');
@@ -34,7 +39,7 @@ function Settings() {
   return (
     <div style={{ marginBottom: '24px' }}>
       <h2 style={{ fontSize: '20px', marginBottom: '16px' }}>Settings</h2>
-      
+
       {message.text && (
         <div style={{ 
           padding: '8px', 
