@@ -3,7 +3,10 @@ ai-outreach-sheets-access-24fe56ec7689.json
 
 # Sensitive credentials
 ai-outreach-sheets-access-*.json
+*sheets-access*.json
 OPENAI_API_KEY=*
+.env*
+credentials*.json
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
