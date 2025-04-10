@@ -2,18 +2,33 @@
 import React from 'react';
 
 class ErrorBoundary extends React.Component {
-  state = { hasError: false };
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false };
+  }
 
   static getDerivedStateFromError(error) {
     return { hasError: true };
   }
 
+  componentDidCatch(error, errorInfo) {
+    console.error('Error caught by boundary:', error, errorInfo);
+  }
+
   render() {
     if (this.state.hasError) {
       return (
-        <div style={{ padding: '20px', textAlign: 'center' }}>
-          <h2>Something went wrong.</h2>
-          <button 
+        <div style={{ 
+          display: 'flex', 
+          flexDirection: 'column', 
+          alignItems: 'center', 
+          justifyContent: 'center', 
+          height: '100vh',
+          padding: '20px',
+          textAlign: 'center'
+        }}>
+          <h1 style={{ fontSize: '24px', marginBottom: '16px' }}>Something went wrong</h1>
+          <button
             onClick={() => window.location.reload()}
             style={{
               backgroundColor: '#0097FB',
@@ -24,11 +39,12 @@ class ErrorBoundary extends React.Component {
               cursor: 'pointer'
             }}
           >
-            Reload Page
+            Refresh Page
           </button>
         </div>
       );
     }
+
     return this.props.children;
   }
 }

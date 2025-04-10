@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { updateEmail, updatePassword } from 'firebase/auth';
+import { updateEmail, updatePassword, EmailAuthProvider, reauthenticateWithCredential } from 'firebase/auth';
 import { useAuth } from '../hooks/useAuth';
 
 function Settings() {
@@ -19,14 +19,26 @@ function Settings() {
     }
   }
 
+  async function reauthenticate() {
+    const password = prompt('Please enter your current password to continue');
+    if (!password) return false;
+    
+    const credential = EmailAuthProvider.credential(user.email, password);
+    try {
+      await reauthenticateWithCredential(user, credential);
+      return true;
+    } catch (error) {
+      setMessage({ text: 'Authentication failed. Please try again.', isError: true });
+      return false;
+    }
+  }
+
   async function handlePasswordUpdate(e) {
     e.preventDefault();
     try {
-      // Check if user needs to re-authenticate
       const lastSignInTime = new Date(user.metadata.lastSignInTime).getTime();
       if (Date.now() - lastSignInTime > 300000) {
-        alert('Please sign out and sign in again to update your password');
-        return;
+        if (!(await reauthenticate())) return;
       }
       await updatePassword(user, newPassword);
       setMessage({ text: 'Password updated successfully!', isError: false });
