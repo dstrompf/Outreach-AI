@@ -7,9 +7,9 @@ import random
 from openai import OpenAI
 import os
 from dotenv import load_dotenv
-from sheets import get_qualified_leads, connect_to_sheet
-import gspread
-from google.oauth2.service_account import Credentials
+# from sheets import get_qualified_leads, connect_to_sheet
+# import gspread
+# from google.oauth2.service_account import Credentials
 import requests
 from bs4 import BeautifulSoup
 from urllib.parse import urljoin
@@ -114,39 +114,9 @@ def scrape_website(request: ScrapeRequest):
         return {"error": str(e)}
 
 def save_generated_email(website, email_content, found_email=""):
-        max_retries = 3
-        retry_delay = 2  # seconds
-
-        for attempt in range(max_retries):
-            try:
-                SERVICE_ACCOUNT_FILE = os.getenv("GOOGLE_SERVICE_ACCOUNT_FILE", "ai-outreach-sheets-access-24fe56ec7689.json")
-                SPREADSHEET_URL = os.getenv("SPREADSHEET_URL", "https://docs.google.com/spreadsheets/d/1WbdwNIdbvuCPG_Lh3-mtPCPO8ddLR5RIatcdeq29EPs/edit")
-                logger.info(f"Attempt {attempt + 1} to save email for {website}")
-
-                scopes = [
-                    "https://www.googleapis.com/auth/spreadsheets",
-                    "https://www.googleapis.com/auth/drive"
-                ]
-                credentials = Credentials.from_service_account_file(SERVICE_ACCOUNT_FILE, scopes=scopes)
-                client = gspread.authorize(credentials)
-                sheet = client.open_by_url(
-                    "https://docs.google.com/spreadsheets/d/1WbdwNIdbvuCPG_Lh3-mtPCPO8ddLR5RIatcdeq29EPs/edit"
-                )
-                worksheet = sheet.worksheet("Generated Emails")
-
-                # Check for existing websites
-                existing_websites = worksheet.col_values(1)
-                if website in existing_websites:
-                    logger.info(f"Website {website} already exists. Skipping save.")
-                    return False
-
-                worksheet.append_row([website, email_content, found_email, "Pending"])
-                logger.info(f"Found {len(existing_websites)} existing processed websites")
-                logger.info(f"Saved new website: {website}")
-                return True
-            except Exception as e:
-                logger.error(f"Failed to save email: {str(e)}")
-                return False
+    # Google Sheets integration temporarily disabled
+    logger.info(f"Email generated for {website} (Sheets integration disabled)")
+    return True
 
 # ----- ROUTES -----
 @app.get("/")
