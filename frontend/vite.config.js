@@ -6,10 +6,11 @@ export default defineConfig({
   plugins: [react()],
   server: {
     host: true,
-    port: 5174,           // Use port 5174 instead of 5173
+    port: 5174,
     strictPort: true,
     watch: {
       usePolling: true,
     },
+    allowedHosts: 'all', // Allow external Replit hosts
   },
 });
