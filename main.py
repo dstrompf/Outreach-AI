@@ -7,9 +7,6 @@ import random
 from openai import OpenAI
 import os
 from dotenv import load_dotenv
-# from sheets import get_qualified_leads, connect_to_sheet
-# import gspread
-# from google.oauth2.service_account import Credentials
 import requests
 from bs4 import BeautifulSoup
 from urllib.parse import urljoin
@@ -33,8 +30,6 @@ app.add_middleware(
 )
 
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
-# Assuming resend is defined elsewhere, this line remains unchanged.
-#resend.api_key = os.getenv("RESEND_API_KEY")
 
 # ----- MODELS -----
 class ScrapeRequest(BaseModel):
@@ -70,31 +65,27 @@ def scrape_website(request: ScrapeRequest):
         headers = {
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
         }
-        
-        # Extract domain for default email
+
         domain = request.url.replace('https://', '').replace('http://', '').replace('www.', '').split('/')[0]
         default_email = f"info@{domain}"
-        
+
         collected_text = ""
-        collected_emails = set([default_email])  # Start with default email
+        collected_emails = set([default_email])
 
         response = session.get(request.url, headers=headers, timeout=10)
         soup = BeautifulSoup(response.text, "html.parser")
-        
-        # Get text content
+
         collected_text += " ".join([tag.get_text() for tag in soup.find_all(["h1", "h2", "p"])])
 
-        # Find mailto: links
         for a in soup.find_all('a', href=True):
             if "mailto:" in a['href']:
                 email = a['href'].replace('mailto:', '').split('?')[0].strip()
                 if '@' in email and '.' in email:
                     collected_emails.add(email)
-                    
-        # If no emails found, use contact@domain
-        if len(collected_emails) == 1:  # Only default email
+
+        if len(collected_emails) == 1:
             collected_emails.add(f"contact@{domain}")
-            
+
         logger.info(f"Found emails for {request.url}: {collected_emails}")
 
         links = find_internal_links(soup, request.url)
@@ -112,11 +103,6 @@ def scrape_website(request: ScrapeRequest):
         return {"text": collected_text, "emails": list(collected_emails)}
     except Exception as e:
         return {"error": str(e)}
-
-def save_generated_email(website, email_content, found_email=""):
-    # Google Sheets integration temporarily disabled
-    logger.info(f"Email generated for {website} (Sheets integration disabled)")
-    return True
 
 # ----- ROUTES -----
 @app.get("/")
@@ -139,21 +125,13 @@ MIN_TIME_BETWEEN_CALLS = 1  # seconds
 @app.post("/generate_email")
 def generate_email(request: GenerateEmailRequest):
     try:
-        # Cost tracking
         logger.info(f"OpenAI API call for {request.business_name}")
 
-        # Check cache with fuzzy matching
         for cached_key in email_cache:
             if request.business_name.lower() in cached_key.lower():
                 logger.info("Using similar business cached response")
                 return {"email": email_cache[cached_key]}
 
-        # Token optimization
-        prompt = f"""Business: {request.business_name}
-Summary: {request.summary[:500]}  # Limit summary length
-Task: Write a short cold email."""
-
-        # Rate limiting
         global last_api_call
         current_time = time.time()
         if current_time - last_api_call < MIN_TIME_BETWEEN_CALLS:
@@ -196,7 +174,6 @@ You can book a quick demo here: https://calendar.google.com/calendar/u/0/appoint
                     "content": prompt
                 }])
             response_text = response.choices[0].message.content
-            # Cache the response
             cache_key = f"{request.business_name}:{request.summary}"
             email_cache[cache_key] = response_text
             last_api_call = time.time()
@@ -210,125 +187,6 @@ You can book a quick demo here: https://calendar.google.com/calendar/u/0/appoint
                 return {"error": "Rate limit hit, please try again in a few minutes"}
             return {"error": str(e)}
     except Exception as e:
-        return {"error": str(e)}
-
-def generate_email_with_retry(request: GenerateEmailRequest, max_retries=3, base_delay=1):
-    RETRYABLE_ERRORS = {
-        '429',  # Rate limit
-        '500',  # Internal server error
-        '502',  # Bad gateway
-        '503',  # Service unavailable
-        '504',  # Gateway timeout
-        'timeout',  # Connection timeout
-        'connection error'  # Generic connection issues
-    }
-
-    for attempt in range(max_retries):
-        try:
-            response = generate_email(request)
-            if response and not response.get('error'):
-                return response
-
-            # Handle empty or error responses
-            error_msg = response.get('error') if response else 'Empty response'
-            raise Exception(error_msg)
-
-        except Exception as e:
-            error_str = str(e).lower()
-            is_retryable = (
-                any(code in error_str for code in RETRYABLE_ERRORS) or
-                'rate_limit' in error_str or
-                'capacity' in error_str
-            )
-
-            if is_retryable and attempt < max_retries - 1:
-                # Exponential backoff with jitter
-                wait_time = min(base_delay * (2 ** attempt) * (1 + random.random() * 0.1), 15)
-                logger.warning(
-                    f"Temporary error: {str(e)}. "
-                    f"Attempt {attempt + 1}/{max_retries}. "
-                    f"Retrying in {wait_time:.1f}s"
-                )
-                time.sleep(wait_time)
-                continue
-
-            logger.error(
-                f"{'Retryable' if is_retryable else 'Non-retryable'} "
-                f"error on attempt {attempt + 1}/{max_retries}: {str(e)}"
-            )
-            if attempt == max_retries - 1:
-                return {
-                    "error": f"Failed after {max_retries} attempts. Last error: {str(e)}",
-                    "status": "error",
-                    "attempts": attempt + 1
-                }
-
-    return {"error": "Max retries exceeded", "status": "error", "attempts": max_retries}
-
-@app.get("/run-campaign")
-@app.get("/run_campaign")  # Support both formats
-def run_campaign():
-    try:
-        qualified_leads = get_qualified_leads()
-        logger.info(f"Found {len(qualified_leads)} qualified leads")
-        emails_generated = 0
-
-        # Process all leads but check for duplicates
-        logger.info(f"Processing all {len(qualified_leads)} leads")
-        
-        sheet = connect_to_sheet()
-        worksheet = sheet.worksheet("Generated Emails")
-        processed_websites = set(worksheet.col_values(1)[1:])  # Skip header
-        logger.info(f"Found {len(processed_websites)} already processed websites")
-
-        for lead in qualified_leads:
-            try:
-                website = lead.get('Website', '')  # Match the actual column name from sheets
-                if not website:
-                    logger.error("Missing website in lead data")
-                    continue
-
-                if website in processed_websites:
-                    logger.info(f"Skipping already processed website: {website}")
-                    continue
-                    
-                logger.info(f"Processing new website: {website}")
-                scrape_resp = scrape_website(ScrapeRequest(url=website))
-                if 'error' in scrape_resp:
-                    logger.error(f"Scraping failed for {website}: {scrape_resp['error']}")
-                    continue
-
-                if not scrape_resp.get('emails'):
-                    logger.info(f"No emails found for {website}")
-                    continue
-
-                summary = "Business using Google Workspace that could benefit from AI form automation"
-                generate_resp = generate_email_with_retry(
-                    GenerateEmailRequest(
-                        business_name=lead.get('business_name', website),
-                        summary=summary
-                    )
-                )
-
-                if 'error' in generate_resp:
-                    logger.error(f"Email generation failed for {website}")
-                    continue
-
-                first_email = scrape_resp['emails'][0]
-                # Always try to save, but don't stop if already exists
-                save_generated_email(website, generate_resp['email'], first_email)
-                emails_generated += 1
-                logger.info(f"Successfully processed {website}")
-
-            except Exception as e:
-                logger.error(f"Error processing {website}: {str(e)}")
-                continue
-
-        logger.info(f"Campaign complete. Generated {emails_generated} emails.")
-        return {"status": "success", "emails_generated": emails_generated}
-
-    except Exception as e:
-        logger.error(f"Campaign failed: {str(e)}")
         return {"error": str(e)}
 
 if __name__ == "__main__":
