@@ -200,24 +200,45 @@ def check_inbox(processed_messages):
             if not sender_name or sender_name == '':
                 sender_name = from_addr.split('@')[0].replace('.', ' ').title()
 
-            # Generate response using AI
+            # Extract email body
+            email_body = ""
+            if email_message.is_multipart():
+                for part in email_message.walk():
+                    if part.get_content_type() == "text/plain":
+                        email_body = part.get_payload(decode=True).decode()
+                        break
+            else:
+                email_body = email_message.get_payload(decode=True).decode()
+
+            # Generate AI response
             response = client.chat.completions.create(
-                model="gpt-4",
+                model="gpt-3.5-turbo",
                 messages=[{
                     "role": "system",
-                    "content": "You are Jenny, a friendly AI assistant. Respond professionally to emails. Always use the person's name in the greeting."
+                    "content": "You are Jenny, a friendly AI assistant. Respond professionally and concisely to the email."
                 }, {
                     "role": "user",
-                    "content": f"Respond to this email from {sender_name}, subject: {subject}"
+                    "content": email_body
                 }]
             )
 
             # Send response
-            send_email(
-                from_addr,
-                f"Re: {subject}",
-                response.choices[0].message.content
-            )
+            msg = MIMEMultipart()
+            msg['From'] = "Jenny from AI Form Reply <jenny@autoformchat.com>"
+            msg['To'] = from_addr
+            msg['Subject'] = f"Re: {subject}"
+            msg['In-Reply-To'] = email_message['Message-ID']
+            msg['References'] = email_message['Message-ID']
+
+            body = MIMEText(response.choices[0].message.content, 'plain')
+            msg.attach(body)
+
+            # Connect to SMTP server and send
+            server = smtplib.SMTP(SMTP_SERVER, SMTP_PORT)
+            server.starttls()
+            server.login(EMAIL_ACCOUNT, EMAIL_PASSWORD)
+            server.send_message(msg)
+            server.quit()
 
             logger.info(f"Responded to email from {from_addr}")
             processed_messages.add(num)
