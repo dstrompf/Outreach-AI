@@ -56,7 +56,7 @@ def scrape_website(request: ScrapeRequest):
 def summarize(request: SummarizeRequest):
     try:
         response = client.chat.completions.create(
-            model="gpt-4",
+            model="gpt-3.5-turbo",
             messages=[
                 {"role": "system", "content": "Summarize the following website content in 3 sentences."},
                 {"role": "user", "content": request.text}
@@ -86,7 +86,7 @@ def generate_email(request: GenerateEmailRequest):
         prompt = f"""Write a short, friendly outreach email to {request.business_name}. Mention their business based on this summary: {request.summary}. Offer a free consultation. End with a soft call to action."""
 
         response = client.chat.completions.create(
-            model="gpt-4",
+            model="gpt-3.5-turbo",
             messages=[
                 {"role": "system", "content": "You are a professional cold email writer."},
                 {"role": "user", "content": prompt}
