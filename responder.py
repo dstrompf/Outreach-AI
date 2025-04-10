@@ -80,14 +80,14 @@ def find_emails_on_page(url):
     if not url.startswith(('http://', 'https://')):
         logger.error(f"Invalid URL format: {url}")
         return []
-        
+
     try:
         headers = {
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
         }
         response = requests.get(url, headers=headers, timeout=10)
         response.raise_for_status()  # Raise an error for bad status codes
-        
+
         soup = BeautifulSoup(response.text, 'html.parser')
         emails = set()
 
@@ -164,17 +164,29 @@ def process_website(website_url, business_name=""):
     save_found_email(website_url, email)
     return email
 
-def check_inbox():
+def connect_to_email():
     try:
-        # Connect to IMAP server
         mail = imaplib.IMAP4_SSL(IMAP_SERVER, IMAP_PORT)
         mail.login(EMAIL_ACCOUNT, EMAIL_PASSWORD)
+        return mail
+    except Exception as e:
+        logger.error(f"Error connecting to email: {str(e)}")
+        return None
+
+def check_inbox(processed_messages):
+    global last_response_time
+    try:
+        mail = connect_to_email()
+        if mail is None:
+            return
         mail.select('INBOX')
 
-        # Search for unread messages
         _, messages = mail.search(None, 'UNSEEN')
 
         for num in messages[0].split():
+            if num in processed_messages:
+                continue
+
             _, msg = mail.fetch(num, '(RFC822)')
             email_body = msg[0][1]
             email_message = email.message_from_bytes(email_body)
@@ -208,6 +220,7 @@ def check_inbox():
             )
 
             logger.info(f"Responded to email from {from_addr}")
+            processed_messages.add(num)
 
         mail.close()
         mail.logout()
@@ -219,7 +232,8 @@ def process_emails():
     logger.info("Starting email processing cycle")
     try:
         # Check inbox first
-        check_inbox()
+        processed_messages = set() # Initialize set to track processed messages
+        check_inbox(processed_messages)
 
         # Then process outgoing emails
         sheet = connect_to_sheet()
