@@ -15,7 +15,7 @@ run = ["python3", "main.py"]
 deploymentTarget = "cloudrun"
 
 [workflows]
-runButton = "AI Email System"
+runButton = "Full Stack Dev"
 
 [[workflows.workflow]]
 name = "Run server"
@@ -60,6 +60,27 @@ args = "python3 responder_server.py"
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "python3 main.py"
+
+[[workflows.workflow]]
+name = "Full Stack Dev"
+author = 41158153
+mode = "parallel"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "npm install"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "npm run dev -- --host 0.0.0.0"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "uvicorn main:app --host 0.0.0.0 --port 5000"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "uvicorn responder_server:app --host 0.0.0.0 --port 3001"
 
 [[ports]]
 localPort = 3001
