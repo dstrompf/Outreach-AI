@@ -5,6 +5,7 @@ ai-outreach-sheets-access-24fe56ec7689.json
 ai-outreach-sheets-access-*.json
 *sheets-access*.json
 OPENAI_API_KEY=*
+*OPENAI_API_KEY*
 .env*
 credentials*.json
 
