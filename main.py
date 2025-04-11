@@ -6,17 +6,8 @@ import time
 import random
 from openai import OpenAI
 import os
-from dotenv import load_dotenv
-import requests
-from bs4 import BeautifulSoup
-from urllib.parse import urljoin
-
-# Configure logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
-
 # ----- SETUP -----
-load_dotenv()
+
 app = FastAPI()
 
 # Configure CORS

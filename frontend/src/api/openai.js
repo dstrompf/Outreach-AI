@@ -1,6 +1,6 @@
 
 export async function generateKnowledgeBaseSuggestion(promptText) {
-  const response = await fetch('/api/chat/completions', {
+  const response = await fetch(`${process.env.BACKEND_URL}/api/chat/completions`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
