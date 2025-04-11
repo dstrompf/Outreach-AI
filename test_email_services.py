@@ -1,12 +1,10 @@
 
 import os
-from dotenv import load_dotenv
 import resend
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 
-load_dotenv()
 resend.api_key = os.getenv("RESEND_API_KEY")
 ZOHO_PASSWORD = os.getenv("JENNY_PASSWORD")
 
@@ -40,7 +38,7 @@ def test_zoho():
         server.quit()
         print("✅ Zoho test email sent successfully")
     except Exception as e:
-        print(f"❌ Zoho test failed: {str(e)}")tr(e)}")
+        print(f"❌ Zoho test failed: {str(e)}")
 
 def test_openai():
     try:

@@ -20,7 +20,7 @@ app.add_middleware(
     expose_headers=["*"]
 )
 
-client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+client = OpenAI()  # Will automatically use OPENAI_API_KEY from environment
 
 # ----- MODELS -----
 class ScrapeRequest(BaseModel):
