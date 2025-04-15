@@ -6,6 +6,7 @@ import time
 import random
 from openai import OpenAI
 import os
+import traceback
 # ----- SETUP -----
 
 app = FastAPI()
@@ -176,9 +177,11 @@ You can book a quick demo here: https://calendar.google.com/calendar/u/0/appoint
             elif "rate_limit" in str(e):
                 time.sleep(20)  # Wait before retry
                 return {"error": "Rate limit hit, please try again in a few minutes"}
-            return {"error": str(e)}
+            logger.error("An error occurred: %s", traceback.format_exc())
+            return {"error": "An internal error has occurred. Please try again later."}
     except Exception as e:
-        return {"error": str(e)}
+        logger.error("An error occurred: %s", traceback.format_exc())
+        return {"error": "An internal error has occurred. Please try again later."}
 
 if __name__ == "__main__":
     import os
