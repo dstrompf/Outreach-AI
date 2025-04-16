@@ -1,2 +1,3 @@
-
-{ pkgs }: { deps = [ pkgs.python3 ]; }
+{ pkgs }: { deps = [
+  pkgs.lsof
+ pkgs.python3 ]; }
