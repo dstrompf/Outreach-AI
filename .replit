@@ -1,14 +1,2 @@
-[nix]
-channel = "stable-24_05"
 
-[workflows]
-runButton = "Static Frontend"
-
-[[workflows.workflow]]
-name = "Static Frontend"
-author = 41158153
-mode = "sequential"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "python3 -m http.server 5000"
+run = "python3 -m http.server 5000"
