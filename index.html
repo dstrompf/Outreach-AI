@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Outreach AI</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
+  <body class="bg-gray-100 min-h-screen text-gray-900">
+    <header class="bg-white shadow">
+      <div class="max-w-6xl mx-auto px-4 py-4 flex justify-between items-center">
+        <h1 class="text-2xl font-bold">Outreach AI</h1>
+        <nav class="space-x-4">
+          <a href="#" class="text-blue-600 hover:underline" onclick="showPage('dashboard')">Dashboard</a>
+          <a href="#" class="text-blue-600 hover:underline" onclick="showPage('email')">Email Settings</a>
+          <a href="#" class="text-blue-600 hover:underline" onclick="showPage('knowledge')">Knowledge Base</a>
+        </nav>
+      </div>
+    </header>
+
+    <main class="max-w-4xl mx-auto py-10 px-4">
+      <!-- Dashboard Page -->
+      <section id="dashboard">
+        <h2 class="text-xl font-semibold mb-4">Add Website to Scrape</h2>
+        <form class="bg-white p-6 rounded-lg shadow-md mb-6">
+          <input type="text" placeholder="https://example.com"
+            class="w-full border border-gray-300 p-2 rounded-md mb-4" />
+          <button type="submit"
+            class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Scrape</button>
+        </form>
+
+        <div class="bg-white p-6 rounded-lg shadow-md">
+          <h3 class="text-lg font-semibold mb-2">Scraped Data (Coming Soon)</h3>
+          <p class="text-gray-500">This will show scraped results here once added.</p>
+        </div>
+      </section>
+
+      <!-- Email Settings Page -->
+      <section id="email" class="hidden">
+        <h2 class="text-xl font-semibold mb-4">Email Settings</h2>
+        <form class="bg-white p-6 rounded-lg shadow-md">
+          <label class="block mb-2">Sender Name</label>
+          <input type="text" class="w-full border border-gray-300 p-2 rounded-md mb-4" />
+          <label class="block mb-2">Sender Email</label>
+          <input type="email" class="w-full border border-gray-300 p-2 rounded-md mb-4" />
+          <label class="block mb-2">Reply-To Email</label>
+          <input type="email" class="w-full border border-gray-300 p-2 rounded-md mb-4" />
+          <button class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Save Settings</button>
+        </form>
+      </section>
+
+      <!-- Knowledge Base Page -->
+      <section id="knowledge" class="hidden">
+        <h2 class="text-xl font-semibold mb-4">Knowledge Base</h2>
+        <form class="bg-white p-6 rounded-lg shadow-md">
+          <label class="block mb-2">Add or Edit Responses</label>
+          <textarea class="w-full border border-gray-300 p-2 rounded-md h-40 mb-4"></textarea>
+          <button class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Save KB</button>
+        </form>
+      </section>
+    </main>
+
+    <script>
+      function showPage(page) {
+        document.getElementById('dashboard').classList.add('hidden');
+        document.getElementById('email').classList.add('hidden');
+        document.getElementById('knowledge').classList.add('hidden');
+        document.getElementById(page).classList.remove('hidden');
+      }
+    </script>
+  </body>
+</html>
